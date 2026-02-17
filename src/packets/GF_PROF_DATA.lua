@@ -1,0 +1,28 @@
+local addonName, ns = ...
+
+local GF_PROF_DATA = {}
+
+if not ns.packets then ns.packets = {} end
+ns.packets.GF_PROF_DATA = GF_PROF_DATA
+
+function GF_PROF_DATA.handle(sender, payload)
+
+    if sender == ns.globals.CHARACTERNAME then return end
+    if not payload then return end
+
+    ns.db.chars = ns.db.chars or {}
+
+    -- sender er allerede "Name-Realm"
+    local key = sender
+
+    ns.db.chars[key] = ns.db.chars[key] or {}
+
+    ns.db.chars[key].name = payload.name
+    ns.db.chars[key].realm = payload.realm
+    ns.db.chars[key].prof1 = payload.prof1
+    ns.db.chars[key].prof1Skill = payload.prof1Skill
+    ns.db.chars[key].prof2 = payload.prof2
+    ns.db.chars[key].prof2Skill = payload.prof2Skill
+    ns.db.chars[key].lastSeen = time()
+
+end
