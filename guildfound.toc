@@ -1,0 +1,10 @@
+## Interface: 20505
+## Title: GuildFound
+## Notes: GuildFound
+## Author: Bappaditya
+## Version: 0.1.17
+## MinVersion: 0.1.10
+## SavedVariables: GuildFoundOptions, GuildFoundMailExceptions, GuildFoundDB
+
+## Include all Lua files via embeds.xml
+embeds.xml

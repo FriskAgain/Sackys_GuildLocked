@@ -1,0 +1,55 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.blizzard.com/wow/ui/">
+
+    <!-- Libraries -->
+    <Script file="libs/LibStub/LibStub.lua" />
+    <Include file="libs/Ace3/AceAddon-3.0/AceAddon-3.0.xml" />
+    <Include file="libs/Ace3/CallbackHandler-1.0/CallbackHandler-1.0.xml" />
+    <Include file="libs/Ace3/AceComm-3.0/AceComm-3.0.xml" />
+    <Include file="libs/Ace3/AceSerializer-3.0/AceSerializer-3.0.xml" />
+    <Include file="libs/LibCompress/lib.xml" />
+    <Include file="libs/LibDBIcon/embeds.xml" />
+    <Include file="libs/LibDBIcon/LibDBIcon-1.0/lib.xml" />
+
+    <!-- Networking -->
+    <Script file="src/packets/BROADCAST_MAIL_EXCEPTIONS.lua" />
+    <Script file="src/packets/INFO_LOGIN.lua" />
+    <Script file="src/packets/PROV_MAIL_EXCEPTIONS.lua" />
+    <Script file="src/packets/REQ_MAIL_EXCEPTIONS.lua" />
+    <Script file="src/packets/REQ_USERS.lua" />
+    <Script file="src/packets/REQ_VERSION.lua" />
+    <Script file="src/packets/RSP_MAIL_EXCEPTIONS.lua" />
+    <Script file="src/packets/RSP_USERS.lua" />
+    <Script file="src/packets/RSP_VERSION.lua" />
+    <script file="src/packets/GF_PROF_DATA.lua" />
+
+
+    <!-- Components -->
+    <Script file="src/components/minimapbutton.lua" />
+    <Script file="src/components/tablev2.lua" />
+    <Script file="src/components/windowframe.lua" />
+
+    <!-- Core -->
+    <Script file="src/log.lua" />
+    <Script file="src/commands.lua" />
+    <Script file="src/events.lua" />
+    <Script file="src/helpers.lua" />
+    <Script file="src/globals.lua" />
+    <Script file="src/networking.lua" />
+    <Script file="src/options.lua" />
+    <Script file="src/ui.lua" />
+
+    <!-- Restrictions -->
+    <Script file="src/restrictions/auctionhouse.lua" />
+    <Script file="src/restrictions/sendmail.lua" />
+    <Script file="src/restrictions/receivemail.lua" />
+    <Script file="src/restrictions/trade.lua" />
+
+    <!-- Sync -->
+    <Script file="src/sync/base.lua" />
+    <Script file="src/sync/mailexception.lua" />
+
+    <!-- Base -->
+    <Script file="guildfound.lua" />
+</Ui>
