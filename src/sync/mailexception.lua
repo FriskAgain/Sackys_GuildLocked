@@ -19,11 +19,11 @@ local function txKey(tx)
 end
 
 function mailexception.initialize()
-    if not GuildFoundMailExceptions then
-        GuildFoundMailExceptions = {}
+    if not SGLKMailExceptions then
+        SGLKMailExceptions = {}
     end
-    if not GuildFoundMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME] then
-        GuildFoundMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME] = {}
+    if not SGLKMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME] then
+        SGLKMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME] = {}
     end
 
     mailexception.readTransactions()
@@ -100,16 +100,16 @@ end
 
 function mailexception.writeTransactions()
     if not mailexception.transactions then return end
-    if not GuildFoundMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME] then return end
+    if not SGLKMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME] then return end
 
     local result = ns.helpers.encrypt(mailexception.transactions)
-    GuildFoundMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME] = result
+    SGLKMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME] = result
 end
 
 function mailexception.readTransactions()
-    if not GuildFoundMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME] then return end
-    local transactions = ns.helpers.decrypt(GuildFoundMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME])
-    -- local transactions = GuildFoundMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME]
+    if not SGLKMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME] then return end
+    local transactions = ns.helpers.decrypt(SGLKMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME])
+    -- local transactions = SGLKMailExceptions[ns.globals.SERVERNAME.."-"..ns.globals.GUILDNAME]
     local filtered = mailexception.filterDeletedTransactions(transactions)
     mailexception.transactions = filtered
 end

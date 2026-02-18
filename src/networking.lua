@@ -1,6 +1,7 @@
 local addonName, ns = ...
+local MAX_SAFE_MSG = 240
 local networking = {
-    PREFIX = "GFOUND-0.1.10"
+    PREFIX = "SGLK01"
 }
 ns.networking = networking
 
@@ -81,12 +82,16 @@ end
 function networking._SendMessage(type, payload, distribution, target)
     -- Sicherstellen, dass initialize() ausgeführt wurde
     if not networking.Serializer or not networking.CompressLib or not networking.EncodeTable or not networking.CommHandler then
-        ns.log.error("Networking is not initialized. Call networking.initialize() before sending messages.")
+        ns.log.error("Networking is not initialized.")
         return
     end
 
     -- Serialize
-    local serialized = networking.Serializer:Serialize{ type = type, payload = payload }
+    local serialized = networking.Serializer:Serialize({ type = type, payload = payload})
+    if not serialized then
+        ns.log.error("Serialization failed")
+        return
+    end
 
     -- Compress
     local compressed, err = networking.CompressLib:Compress(serialized)
@@ -97,11 +102,22 @@ function networking._SendMessage(type, payload, distribution, target)
 
     -- Encode
     local encoded = networking.EncodeTable:Encode(compressed)
+    if not encoded then
+        ns.log.error("Encoding failed")
+        return
+    end
+
+    -- Size Guard
+    local size = #encoded
+    if size > MAX_SAFE_MSG then
+        ns.log.warn("Packet too large ("..size.." bytes) — blocked: "..tostring(type))
+        return
+    end
 
     if distribution == "WHISPER" then
-        ns.log.debug("Networking: Sending: " .. type .. " | Distribution: " .. distribution .. " | Target: " .. target)
+        ns.log.debug("Sending "..type.." to "..tostring(target).." ("..size.."b)")
     else
-        ns.log.debug("Networking: Sending: " .. type .. " | Distribution: " .. distribution)
+        ns.log.debug("Sending "..type.." to "..distribution.." ("..size.."b)")
     end
-    networking.CommHandler:SendCommMessage(networking.PREFIX, encoded, distribution, target, "BULK")
+    networking.CommHandler:SendCommMessage(networking.PREFIX, encoded, distribution, target, "NORMAL")
 end

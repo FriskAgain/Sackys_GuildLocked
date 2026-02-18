@@ -2,66 +2,92 @@ local addonName, ns = ...
 local commands = {}
 ns.commands = commands
 
-SLASH_GUILDFOUND1 = "/gf"
+local PRIMARY_CMD = "/sglk"
+local ALT_CMD     = "/guildlocked"
+
+local function PrintRootHelp()
+    ns.log.info(PRIMARY_CMD .. " <option>")
+    ns.log.info("Options: mailexceptions")
+    ns.log.info("Alias: " .. ALT_CMD)
+end
+
+local function PrintMailexceptionHelp()
+    ns.log.info(PRIMARY_CMD .. " mailexceptions <option>")
+    ns.log.info("Options: list, add, delete")
+end
+
 function commands.SlashHandler(msg)
 
-    local rank = ns.helpers.getGuildMemberRank(ns.globals.CHARACTERNAME)
+    local rank = ns.helpers.getGuildMemberRank(UnitName("player"))
     if type(rank) ~= "number" then
+        ns.log.info("You must be in a guild to use "..PRIMARY_CMD..".")
         return
     end
 
-    if not (rank <= 2) then
+    if rank > 2 then
         ns.log.info("Permission denied (only Guild Master and Officers allowed)")
         return
     end
 
-    msg = msg:match("^%s*(.-)%s*$")
+    msg = (msg or ""):match("^%s*(.-)%s*$")
     local args = {}
     for word in string.gmatch(msg, "%S+") do
-        table.insert(args, word)
+        args[#args+1] = word
     end
 
+    local cmd = (args[1] or ""):lower()
+    local sub = (args[2] or ""):lower()
+
     if args[1] == "test" then
-        --
-    elseif args[1] == "mailexceptions" and args[2] == "delete" and args[3] then
+        -- future 
+        return
+
+    elseif cmd == "mailexceptions" and sub == "delete" and args[3] then
         local name = args[3]
-        local tx = {
-            u = name,
-            t = time(),
-            d = 1
-        }
+        local tx = { u = name, t = time(), d = 1 }
         ns.sync.mailexception._RecordTransaction(tx)
         ns.networking.SendToGuild("BROADCAST_MAIL_EXCEPTION", tx)
         ns.log.info("Mailexception: " .. name .. " deleted")
-    elseif args[1] == "mailexceptions" and args[2] == "delete" then
-        ns.log.info("/gf mailexceptions delete <charname>")
-    elseif args[1] == "mailexceptions" and args[2] == "add" and args[3] then
+        return
+
+    elseif cmd == "mailexceptions" and sub == "delete" then
+        ns.log.info(PRIMARY_CMD .. " mailexceptions delete <charname>")
+        return
+
+    elseif cmd == "mailexceptions" and sub == "add" and args[3] then
         local name = args[3]
-        local tx = {
-            u = name,
-            t = time(),
-            d = 0
-        }
+        local tx = { u = name, t = time(), d = 0 }
         ns.sync.mailexception._RecordTransaction(tx)
         ns.networking.SendToGuild("BROADCAST_MAIL_EXCEPTION", tx)
         ns.log.info("Mailexception: " .. name .. " added")
-    elseif args[1] == "mailexceptions" and args[2] == "add" then
-        ns.log.info("/gf mailexceptions add <charname>")
-    elseif args[1] == "mailexceptions" and args[2] == "list" then
+        return
+
+    elseif cmd == "mailexceptions" and sub == "add" then
+        ns.log.info(PRIMARY_CMD .. " mailexceptions add <charname>")
+        return
+
+    elseif cmd == "mailexceptions" and sub == "list" then
         local list = ns.sync.mailexception.getList()
-        local isEmpty = true
+        if not list or #list == 0 then
+            ns.log.info("Mailexception: None")
+            return
+        end
         for _, entry in ipairs(list) do
-            isEmpty = false
             local dateStr = date("%Y-%m-%d %H:%M:%S", entry.t)
             ns.log.info(dateStr .. " | " .. entry.u)
         end
-        if isEmpty then ns.log.info("Mailexception: None") end
-    elseif args[1] == "mailexceptions" then
-        ns.log.info("/gf mailexceptions <option>")
-        ns.log.info("Options: list, add, delete")
-    else
-        ns.log.info("/gf <option>")
-        ns.log.info("Options: mailexceptions")
+        return
+
+    elseif cmd == "mailexceptions" then
+        PrintMailexceptionHelp()
+        return
     end
+
+    PrintRootHelp()
 end
-SlashCmdList["GUILDFOUND"] = commands.SlashHandler
+
+SLASH_SGLK1 = PRIMARY_CMD
+SLASH_SGLK2 = ALT_CMD
+SlashCmdList["SGLK"] = function(msg)
+    commands.SlashHandler(msg or "")
+end

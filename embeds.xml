@@ -22,7 +22,7 @@
     <Script file="src/packets/RSP_MAIL_EXCEPTIONS.lua" />
     <Script file="src/packets/RSP_USERS.lua" />
     <Script file="src/packets/RSP_VERSION.lua" />
-    <script file="src/packets/GF_PROF_DATA.lua" />
+    <script file="src/packets/SGLK_PROF_DATA.lua" />
 
 
     <!-- Components -->
@@ -51,5 +51,5 @@
     <Script file="src/sync/mailexception.lua" />
 
     <!-- Base -->
-    <Script file="guildfound.lua" />
+    <Script file="sglk.lua" />
 </Ui>

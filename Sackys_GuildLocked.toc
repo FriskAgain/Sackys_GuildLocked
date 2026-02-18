@@ -1,0 +1,10 @@
+## Interface: 20505
+## Title: Sackys GuildLocked
+## Notes: GuildLocked channel for SackyBoi
+## Author: Fria & YozoraCho
+## Version: 0.1.1
+## MinVersion: 0.1.1
+## SavedVariables: SGLKOptions, SGLKMailExceptions, SGLKDB
+
+## Include all Lua files via embeds.xml
+embeds.xml

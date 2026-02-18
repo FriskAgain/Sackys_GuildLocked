@@ -59,7 +59,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         local rank = ns.helpers.getGuildMemberRank(ns.globals.CHARACTERNAME)
         if type(rank) == "number" then -- only valid in a guild
             ns.option_defaults.initialize()
-            ns.guildfound.initialize()
+            ns.sglk.initialize()
             
             ns.networking.SendToGuild("RSP_VERSION", {version = ns.globals.ADDONVERSION}, sender)
             

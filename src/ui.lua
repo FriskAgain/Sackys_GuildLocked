@@ -4,10 +4,9 @@ ns.ui = ui
 
 function ui.initialize()
 
-    -- undgå dobbelt init
     if ui.frame then return end
 
-    ui.frame = ns.components.windowframe:Create(600, 400):Title("GuildFound"):Draggable()
+    ui.frame = ns.components.windowframe:Create(600, 400):Title("SGLK"):Draggable()
 
     ui.frame.background = ui.frame.frame:CreateTexture(nil, "BACKGROUND")
     ui.frame.background:SetColorTexture(0, 0, 0, 0.3)
@@ -19,7 +18,6 @@ function ui.initialize()
     memberlist:SetPoint("TOPLEFT", ui.frame.frame, "TOPLEFT", 10, -30)
     memberlist:SetPoint("BOTTOMRIGHT", ui.frame.frame, "BOTTOMRIGHT", -10, 10)
 
-    -- ⚔️ NY metadata der matcher professions
     local metadata = {
 
         sort = {

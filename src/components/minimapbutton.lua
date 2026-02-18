@@ -10,31 +10,31 @@ function minimapbutton.create()
     minimapbutton.LDB = LibStub("LibDataBroker-1.1")
     minimapbutton.LDBIcon = LibStub("LibDBIcon-1.0")
 
-    local dataObject = minimapbutton.LDB:NewDataObject("GuildFound", {
+    local dataObject = minimapbutton.LDB:NewDataObject("SGLK", {
         type = "data source",
-        text = "GuildFound",
+        text = "SGLK",
         icon = "Interface\\AddOns\\" .. addonName .. "\\src\\images\\blp\\icon.blp",
         OnClick = function(self, button)
             if button == "LeftButton" then
                 ns.ui.toggleWindow()
             elseif button == "RightButton" then
-                if GuildFoundRightClickWindow:IsShown() then
-                    GuildFoundRightClickWindow:Hide()
+                if SGLKRightClickWindow:IsShown() then
+                    SGLKRightClickWindow:Hide()
                 else
-                    GuildFoundRightClickWindow:Show()
+                    SGLKRightClickWindow:Show()
                 end
             end
         end,
         OnTooltipShow = function(tooltip)
-            tooltip:AddLine("GuildFound", 1, 1, 1)
-            tooltip:AddLine("Left-Click: Toggle GuildFound window", 0.8, 0.8, 0.8)
+            tooltip:AddLine("SGLK", 1, 1, 1)
+            tooltip:AddLine("Left-Click: Toggle SGLK window", 0.8, 0.8, 0.8)
             tooltip:AddLine("Right-Click: Open Options", 0.8, 0.8, 0.8)
         end,
     })
 
-    minimapbutton.LDBIcon:Register("GuildFound", dataObject, ns.options.minimap)
+    minimapbutton.LDBIcon:Register("SGLK", dataObject, ns.options.minimap)
 
-    local rightClickWindow = CreateFrame("Frame", "GuildFoundRightClickWindow", UIParent, "BackdropTemplate")
+    local rightClickWindow = CreateFrame("Frame", "SGLKRightClickWindow", UIParent, "BackdropTemplate")
     rightClickWindow:SetSize(300, 200) -- Set the size of the window
     rightClickWindow:SetPoint("CENTER") -- Position it in the center of the screen
     rightClickWindow:SetBackdrop({

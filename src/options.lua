@@ -4,11 +4,11 @@ local option_defaults = {}
 ns.option_defaults = option_defaults
 
 function option_defaults.initialize()
-    if type(GuildFoundOptions) ~= "table" then
-        GuildFoundOptions = {}
+    if type(SGLKOptions) ~= "table" then
+        SGLKOptions = {}
     end
 
-    ns.options = GuildFoundOptions
+    ns.options = SGLKOptions
 
     if type(ns.options.debug) ~= "boolean" then
         ns.options.debug = false
@@ -18,15 +18,15 @@ function option_defaults.initialize()
         ns.options.minimap = {}
     end
 
-    if type(GuildFoundDB) ~= "table" then
-    GuildFoundDB = {}
+    if type(SGLKDB) ~= "table" then
+    SGLKDB = {}
     end
 
-    if type(GuildFoundDB.chars) ~= "table" then
-    GuildFoundDB.chars = {}
+    if type(SGLKDB.chars) ~= "table" then
+    SGLKDB.chars = {}
     end
 
-    ns.db = GuildFoundDB
+    ns.db = SGLKDB
 
 
 end
