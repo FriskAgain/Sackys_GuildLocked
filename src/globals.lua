@@ -24,6 +24,6 @@ function globals.update()
     globals.CHARACTERNAME = UnitName("player").."-"..GetRealmName()
     globals.GUILDNAME = GetGuildInfo("player")
     globals.SERVERNAME = GetRealmName()
-    globals.GUILDRANK = ns.helpers.getGuildMemberRank("player")
+    globals.GUILDRANK = (ns.helpers and ns.helpers.getGuildMemberRank) and ns.helpers.getGuildMemberRank(UnitName("player")) or nil
     globals.ADDONVERSION = GetAddonVersion()
 end

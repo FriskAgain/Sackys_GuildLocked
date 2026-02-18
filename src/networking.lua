@@ -20,14 +20,30 @@ function networking.initialize()
     networking.EncodeTable = networking.CompressLib:GetAddonEncodeTable()
 
     networking.CommHandler:RegisterComm(networking.PREFIX, function(_, msg, distribution, sender)
-        local fullSender = sender:find("-") and sender or (sender .. "-" .. GetRealmName())
+        if not sender then return end
+        local fullSender = sender
+        if not sender:find("-") then
+            local _, realm = UnitFullName("player")
+            if realm then
+                fullSender = sender .. "-" .. realm
+            end
+        end
         networking.ReceivedMessage(msg, distribution, fullSender)
     end)
 end
 
 function networking.ReceivedMessage(msg, distribution, sender)
-    -- ns.log.debug("Networking:ReceivedMessage() called with distribution: " .. tostring(distribution) .. ", sender: " .. tostring(sender))
-    if sender == ns.globals.CHARACTERNAME then return end -- Ignore messages from self
+    -- Ignored self
+    do
+        local playerName, playerRealm = UnitFullName("player")
+        local playerFull = (playerName and playerRealm) and (playerName .. "-" .. playerRealm) or nil
+        if (playerFull and sender == playerFull)
+            or (ns.globals and ns.globals.CHARACTERNAME and sender == ns.globals.CHARACTERNAME)
+            or Ambiguate(sender, "none") == playerName
+        then
+            return
+        end
+    end
 
     if distribution == "WHISPER" and not ns.helpers.isGuildMember(sender) then
         ns.log.debug("Ignored whisper from non-guild member: " .. tostring(sender))

@@ -19,58 +19,68 @@ frame:RegisterEvent("GUILD_ROSTER_UPDATE")
 frame:RegisterEvent("PLAYER_DEAD")
 frame:RegisterEvent("SKILL_LINES_CHANGED")
 
-frame:SetScript("OnEvent", function(self, event, arg1, arg2)
+local didGuildInit = false
 
+local function RequestGuildRoster()
+    if GuildRoster then
+        GuildRoster()
+    elseif C_GuildInfo and C_GuildInfo.GuildRoster then
+        C_GuildInfo.GuildRoster()
+    end
+end
+
+frame:SetScript("OnEvent", function(self, event, arg1, arg2)
     if event == "ADDON_LOADED" then
         self:UnregisterEvent("ADDON_LOADED")
-    elseif event == "PLAYER_LOGIN" then
+        return
+    end
+    
+    if event == "PLAYER_LOGIN" then
+        ns.option_defaults.initialize()
+        ns.globals.update()
+        ns.networking.initialize()
+        ns.helpers.scanPlayerProfessions()
+        ns.ui.initialize()
+        ns.components.minimapbutton.create()
+        C_Timer.After(0.2, RequestGuildRoster)
+        self:UnregisterEvent("PLAYER_LOGIN")
+        return
+    end
 
-    ns.option_defaults.initialize()
-
-    ns.globals.update()
-
-    ns.networking.initialize()
-
-    ns.helpers.scanPlayerProfessions()
-
-    ns.ui.initialize()
-
-    ns.components.minimapbutton.create()
-
-    C_Timer.After(2, function()
-
-        if GuildRoster then
-            GuildRoster()
-        elseif C_GuildInfo and C_GuildInfo.GuildRoster then
-            C_GuildInfo.GuildRoster()
-        end
-
-    end)
-
-    self:UnregisterEvent("PLAYER_LOGIN")
-
-    elseif event == "PLAYER_LOGOUT" then
+    if event == "PLAYER_LOGOUT" then
         ns.sync.mailexception.writeTransactions()
         self:UnregisterEvent("PLAYER_LOGOUT")
+        return
+    end
 
-    elseif event == "GUILD_ROSTER_UPDATE" then
+    if event == "GUILD_ROSTER_UPDATE" then
         ns.globals.update()
+        if not didGuildInit then
+            local rank = ns.helpers.getGuildMemberRank(ns.globals.CHARACTERNAME)
+            if type(rank) == "number" then
+                didGuildInit = true
 
-        local rank = ns.helpers.getGuildMemberRank(ns.globals.CHARACTERNAME)
-        if type(rank) == "number" then -- only valid in a guild
-            ns.option_defaults.initialize()
-            ns.sglk.initialize()
-            
-            ns.networking.SendToGuild("RSP_VERSION", {version = ns.globals.ADDONVERSION}, sender)
-            
-            ns.restrictions.sendmail.initialize()
-            
-            ns.sync.base.initialize()
-            ns.sync.mailexception.initialize()
-
-            self:UnregisterEvent("GUILD_ROSTER_UPDATE") -- Unregister after first valid update
+                ns.option_defaults.initialize()
+                ns.sglk.initialize()
+                ns.restrictions.sendmail.initialize()
+                ns.sync.base.initialize()
+                ns.sync.mailexception.initialize()
+            end
         end
-    elseif event == "AUCTION_HOUSE_SHOW" then
+        if ns.ui and ns.ui.frame then
+            ns.ui.refresh()
+        end
+        return
+    end
+
+    if event == "SKILL_LINES_CHANGED" then
+        ns.helpers.scanPlayerProfessions()
+        if ns.ui and ns.ui.frame then
+            ns.ui.refresh()
+        end
+        return
+    end
+    if event == "AUCTION_HOUSE_SHOW" then
         ns.restrictions.auctionhouse.handle()
     elseif event == "TRADE_SHOW" then
         local name = TradeFrameRecipientNameText and TradeFrameRecipientNameText:GetText() or nil
@@ -94,20 +104,6 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         end)
     elseif event == "MAIL_SEND_INFO_UPDATE" then
         ns.restrictions.sendmail.validateRecipient()
-    elseif event == "GUILD_ROSTER_UPDATE" then
-
-    if ns.ui and ns.ui.frame then
-        ns.ui.refresh()
-    end
-
-    elseif event == "SKILL_LINES_CHANGED" then
-
-        ns.helpers.scanPlayerProfessions()
-
-    if ns.ui and ns.ui.frame then
-        ns.ui.refresh()
-    end
-
     elseif event == "PLAYER_DEAD" then
         local tx = {
             u = Ambiguate(ns.globals.CHARACTERNAME, 'none'),
@@ -115,7 +111,6 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
             d = 0
         }
         ns.sync.mailexception._RecordTransaction(tx)
-        ns.networking.SendToGuild("BROADCAST_MAIL_EXCEPTION", tx)
+        ns.networking.SendToGuild("BROADCAST_MAIL_EXCEPTIONS", tx)
     end
-
 end)

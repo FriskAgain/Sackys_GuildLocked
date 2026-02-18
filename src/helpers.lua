@@ -2,15 +2,12 @@ local addonName, ns = ...
 local helpers = {}
 ns.helpers = helpers
 
-function helpers.isGuildMember(target, shortName)
-    if shortName ~= true then shortName = false end
+function helpers.isGuildMember(target)
     if not target or not IsInGuild() then return false end
+    local targetShort = Ambiguate(target, "none")
     for i = 1, GetNumGuildMembers() do
         local name = GetGuildRosterInfo(i)
-        if shortName then
-            name = Ambiguate(name, "none")
-        end
-        if name == target then
+        if name and Ambiguate(name, "none") == targetShort then
             return true
         end
     end
@@ -88,10 +85,14 @@ end
 
 function helpers.getGuildMemberRank(name)
     if not name or not IsInGuild() then return nil end
+    local wantShort = Ambiguate(name, "none") -- strips realm from name if present.
     for i = 1, GetNumGuildMembers() do
-        local memberName, rank, rankIndex = GetGuildRosterInfo(i)
-        if memberName == Ambiguate(name, "mail") then
-            return rankIndex
+        local memberName, _, rankIndex = GetGuildRosterInfo(i)
+        if memberName then
+            local memberShort = Ambiguate(memberName, "none")
+            if memberShort == wantShort then
+                return rankIndex
+            end
         end
     end
     return nil

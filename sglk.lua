@@ -1,4 +1,5 @@
 local addonName, ns = ...
+_G[addonName] = ns
 local sglk = {}
 ns.sglk = sglk
 
