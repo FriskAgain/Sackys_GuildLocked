@@ -20,8 +20,6 @@ frame:RegisterEvent("PLAYER_DEAD")
 frame:RegisterEvent("SKILL_LINES_CHANGED")
 frame:RegisterEvent("PARTY_INVITE_REQUEST")
 frame:RegisterEvent("GROUP_ROSTER_UPDATE")
-frame:RegisterEvent("PARTY_INVITE_REQUEST")
-frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 
 local didGuildInit = false
 
@@ -54,33 +52,46 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         C_Timer.After(2, RequestGuildRoster)
         self:UnregisterEvent("PLAYER_LOGIN")
         return
-    end
-    
-    if event == "PLAYER_LOGOUT" then
-        ns.networking.SendToGuild("ADDON_STATUS", {
-            state = "OFFLINE"
-        })
+
+    elseif event == "PLAYER_LOGOUT" then
+        ns.networking.SendToGuild("ADDON_STATUS", { state = "OFFLINE" })
         ns.sync.mailexception.writeTransactions()
         self:UnregisterEvent("PLAYER_LOGOUT")
         return
-    end
-    
-    if event == "GUILD_ROSTER_UPDATE" then
+
+    elseif event == "GUILD_ROSTER_UPDATE" then
         ns.globals.update()
+
+        if not IsInGuild() then
+            return
+        end
+
         if not didGuildInit then
             local rank = ns.helpers.getGuildMemberRank(ns.globals.CHARACTERNAME)
             if type(rank) == "number" then
                 didGuildInit = true
-                
+                ns.log.debug("Guild roster ready. Initializing guild systems.")
+
                 ns.option_defaults.initialize()
                 ns.sglk.initialize()
                 ns.restrictions.sendmail.initialize()
                 ns.sync.base.initialize()
                 ns.sync.mailexception.initialize()
+                ns.networking.SendToGuild("ADDON_STATUS", {
+                    state = "ONLINE",
+                    version = ns.globals.ADDONVERSION
+                })
+                SafeUIRefresh()
             end
+        else
+            SafeUIRefresh()
         end
-        if ns.ui and ns.ui.frame then
-            ns.ui.refresh()
+
+        return
+
+    elseif event == "GROUP_ROSTER_UPDATE" then
+        if ns.restrictions and ns.restrictions.group and ns.restrictions.group.handle then
+            ns.restrictions.group.handle()
         end
 
         return
@@ -93,17 +104,34 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         end
 
         return
-    end
-    
-    if event == "SKILL_LINES_CHANGED" then
-        ns.helpers.scanPlayerProfessions()
-        if ns.ui and ns.ui.frame then
-            ns.ui.refresh()
+
+    elseif event == "PARTY_INVITE_REQUEST" then
+        local inviteName = arg1 and Ambiguate(arg1, "none") or nil
+        if not inviteName then return end
+
+        if didGuildInit and ns.helpers and ns.helpers.isGuildMember and not ns.helpers.isGuildMember(inviteName) then
+            if DeclineGroup then DeclineGroup() end
+            if StaticPopup_Hide then StaticPopup_Hide("PARTY_INVITE") end
+
+            if SendChatMessage then
+                SendChatMessage(
+                    "This character only groups with guild members.",
+                    "WHISPER",
+                    nil,
+                    inviteName
+                )
+            end
         end
         return
-    end
-    if event == "AUCTION_HOUSE_SHOW" then
+
+    elseif event == "SKILL_LINES_CHANGED" then
+        ns.helpers.scanPlayerProfessions()
+        SafeUIRefresh()
+        return
+
+    elseif event == "AUCTION_HOUSE_SHOW" then
         ns.restrictions.auctionhouse.handle()
+
     elseif event == "TRADE_SHOW" then
         local name = TradeFrameRecipientNameText and TradeFrameRecipientNameText:GetText() or nil
         ns.log.debug("TRADE_SHOW with " .. tostring(name))
