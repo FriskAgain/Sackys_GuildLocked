@@ -18,6 +18,8 @@ frame:RegisterEvent("MAIL_SEND_INFO_UPDATE")
 frame:RegisterEvent("GUILD_ROSTER_UPDATE")
 frame:RegisterEvent("PLAYER_DEAD")
 frame:RegisterEvent("SKILL_LINES_CHANGED")
+frame:RegisterEvent("PARTY_INVITE_REQUEST")
+frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 
 local didGuildInit = false
 
@@ -33,9 +35,9 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
     if event == "ADDON_LOADED" then
         self:UnregisterEvent("ADDON_LOADED")
         return
-    end
     
-    if event == "PLAYER_LOGIN" then
+    
+    elseif event == "PLAYER_LOGIN" then
         ns.option_defaults.initialize()
         ns.globals.update()
         ns.networking.initialize()
@@ -45,19 +47,18 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         C_Timer.After(0.2, RequestGuildRoster)
         self:UnregisterEvent("PLAYER_LOGIN")
         return
-    end
     
-    if event == "PLAYER_LOGOUT" then
-        ns.networking.SendToGuild("ADDON_STATUS", {
-            state = "OFFLINE"
-        })
+    
+    elseif event == "PLAYER_LOGOUT" then
+        ns.networking.SendToGuild("ADDON_STATUS", { state = "OFFLINE" })
         ns.sync.mailexception.writeTransactions()
         self:UnregisterEvent("PLAYER_LOGOUT")
         return
-    end
     
-    if event == "GUILD_ROSTER_UPDATE" then
+    
+    elseif event == "GUILD_ROSTER_UPDATE" then
         ns.globals.update()
+
         if not didGuildInit then
             local rank = ns.helpers.getGuildMemberRank(ns.globals.CHARACTERNAME)
             if type(rank) == "number" then
@@ -70,21 +71,48 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 ns.sync.mailexception.initialize()
             end
         end
+
         if ns.ui and ns.ui.frame then
             ns.ui.refresh()
         end
         return
-    end
+
+    elseif event == "GROUP_ROSTER_UPDATE" then
+
+        if ns.restrictions and ns.restrictions.group then
+            ns.restrictions.group.handle()
+        end
+
+        return
+
+    elseif event == "PARTY_INVITE_REQUEST" then
+        local inviteName = Ambiguate(arg1, "none")
+
+        if not ns.helpers.isGuildMember(inviteName) then
+            DeclineGroup()
+            StaticPopup_Hide("PARTY_INVITE")
+
+            SendChatMessage(
+                "This character only groups with guild members.",
+                "WHISPER",
+                nil,
+                inviteName
+            )
+        end
+        return
     
-    if event == "SKILL_LINES_CHANGED" then
+    elseif event == "SKILL_LINES_CHANGED" then
         ns.helpers.scanPlayerProfessions()
+
         if ns.ui and ns.ui.frame then
             ns.ui.refresh()
         end
+
         return
-    end
-    if event == "AUCTION_HOUSE_SHOW" then
+    
+    elseif event == "AUCTION_HOUSE_SHOW" then
         ns.restrictions.auctionhouse.handle()
+
     elseif event == "TRADE_SHOW" then
         local name = TradeFrameRecipientNameText and TradeFrameRecipientNameText:GetText() or nil
         ns.log.debug("TRADE_SHOW with " .. tostring(name))
@@ -115,5 +143,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         }
         ns.sync.mailexception._RecordTransaction(tx)
         ns.networking.SendToGuild("BROADCAST_MAIL_EXCEPTIONS", tx)
+
     end
+
 end)
