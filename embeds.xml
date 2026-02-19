@@ -22,8 +22,8 @@
     <Script file="src/packets/RSP_MAIL_EXCEPTIONS.lua" />
     <Script file="src/packets/RSP_USERS.lua" />
     <Script file="src/packets/RSP_VERSION.lua" />
-    <script file="src/packets/SGLK_PROF_DATA.lua" />
-
+    <Script file="src/packets/SGLK_PROF_DATA.lua" />
+    <Script file="src/packets/ADDON_STATUS.lua" />
 
     <!-- Components -->
     <Script file="src/components/minimapbutton.lua" />

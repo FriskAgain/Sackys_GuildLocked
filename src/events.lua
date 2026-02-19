@@ -46,20 +46,23 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         self:UnregisterEvent("PLAYER_LOGIN")
         return
     end
-
+    
     if event == "PLAYER_LOGOUT" then
+        ns.networking.SendToGuild("ADDON_STATUS", {
+            state = "OFFLINE"
+        })
         ns.sync.mailexception.writeTransactions()
         self:UnregisterEvent("PLAYER_LOGOUT")
         return
     end
-
+    
     if event == "GUILD_ROSTER_UPDATE" then
         ns.globals.update()
         if not didGuildInit then
             local rank = ns.helpers.getGuildMemberRank(ns.globals.CHARACTERNAME)
             if type(rank) == "number" then
                 didGuildInit = true
-
+                
                 ns.option_defaults.initialize()
                 ns.sglk.initialize()
                 ns.restrictions.sendmail.initialize()
@@ -72,7 +75,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         end
         return
     end
-
+    
     if event == "SKILL_LINES_CHANGED" then
         ns.helpers.scanPlayerProfessions()
         if ns.ui and ns.ui.frame then

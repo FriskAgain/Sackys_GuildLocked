@@ -53,6 +53,11 @@ function ui.initialize()
         col6 = {
             header = "Skill",
             field = "prof2Skill"
+        },
+
+        col7 = {
+            header = "Addon Active",
+            field = "addon_active"
         }
 
     }
@@ -98,7 +103,8 @@ function ui.refresh()
 
     local showOnlineOnly = false
 
-    ui.dataBuffer = ns.helpers.getGuildMemberData(showOnlineOnly)
+    ui.dataBuffer = ui.updateMemberList(showOnlineOnly)
+    ns.networking.SendToGuild("REQ_VERSION", {})
 
     if ui.memberTable then
 
@@ -111,18 +117,48 @@ end
 
 
 function ui.updateMemberList(showOnlineOnly)
+
     local data = ns.helpers.getGuildMemberData(showOnlineOnly)
+
+    ns.networking.activeUsers = ns.networking.activeUsers or {}
+    ns.db.addonStatus = ns.db.addonStatus or {}
+
     for i, member in ipairs(data) do
-        if member.name == Ambiguate(ns.globals.CHARACTERNAME, "none") then
+
+        local name = Ambiguate(member.name, "none")
+
+        local live = ns.networking.activeUsers[name]
+        local saved = ns.db.addonStatus[name]
+
+        -- If me
+        if name == Ambiguate(ns.globals.CHARACTERNAME, "none") then
+
             member.version = ns.globals.ADDONVERSION or "-"
             member.addon_active = true
+
+        elseif live then
+
+            member.version = live.version or "-"
+            member.addon_active = live.active
+
+        elseif saved then
+
+            member.version = saved.version or "-"
+            member.addon_active = saved.active
+
         else
+
             member.version = "-"
             member.addon_active = false
+
         end
+
     end
+
     return data
+
 end
+
 
 function ui.updateFieldValue(name, field, value)
     if not name or not field or not value then return end

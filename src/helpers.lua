@@ -24,7 +24,7 @@ function helpers.getGuildMemberData(onlineOnly)
 
     local realm = GetRealmName()
 
-    -- lav lookup for online status fra guild roster
+    -- lookup online status from guild roster
     local onlineMap = {}
 
     if IsInGuild() then
@@ -49,7 +49,7 @@ function helpers.getGuildMemberData(onlineOnly)
 
     end
 
-    -- ⚔️ brug database som primær source
+    -- Use database as primary source
     for key, data in pairs(ns.db.chars) do
 
         local isOnline = onlineMap[key] or false
@@ -132,7 +132,7 @@ function helpers.getPlayerProfessionsClassic()
 
     local profs = {}
 
-    -- whitelist baseret på skillName
+    -- whitelist based on skillName
     local PRIMARY_NAMES = {
 
         ["Blacksmithing"] = true,
@@ -207,7 +207,7 @@ function helpers.scanPlayerProfessions()
     local name = UnitName("player")
     local realm = GetRealmName()
 
-    -- ⚔️ STANDARD KEY FORMAT
+    -- STANDARD KEY FORMAT
     local key = name .. "-" .. realm
 
     ns.db.chars[key] = ns.db.chars[key] or {}

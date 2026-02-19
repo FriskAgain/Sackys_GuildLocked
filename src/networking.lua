@@ -5,10 +5,42 @@ local networking = {
 }
 ns.networking = networking
 
+networking.activeUsers = networking.activeUsers or {}
+
+
 function networking.initialize()
+
+    -- Debug access (for /run testing)
+    _G.SGLK_NS = ns
+
     ns.log.debug("Networking:Initialize() called")
 
+    -------------------------------------------------
+    -- 1. Ensure data tables exist
+    -------------------------------------------------
+
+    networking.activeUsers = networking.activeUsers or {}
+    ns.db = ns.db or SGLKDB
+    ns.db.addonStatus = ns.db.addonStatus or {}
+
+    -------------------------------------------------
+    -- 2. Restore persisted addon status
+    -------------------------------------------------
+
+    for name, data in pairs(ns.db.addonStatus) do
+        networking.activeUsers[name] = {
+            version = data.version,
+            active = data.active,
+            lastSeen = data.lastSeen
+        }
+    end
+
+    -------------------------------------------------
+    -- 3. Setup AceComm
+    -------------------------------------------------
+
     local AceAddon = LibStub("AceAddon-3.0")
+
     if not AceAddon:GetAddon("CommHandler", true) then
         networking.CommHandler = AceAddon:NewAddon("CommHandler", "AceComm-3.0")
     else
@@ -20,7 +52,9 @@ function networking.initialize()
     networking.EncodeTable = networking.CompressLib:GetAddonEncodeTable()
 
     networking.CommHandler:RegisterComm(networking.PREFIX, function(_, msg, distribution, sender)
+
         if not sender then return end
+
         local fullSender = sender
         if not sender:find("-") then
             local _, realm = UnitFullName("player")
@@ -28,9 +62,90 @@ function networking.initialize()
                 fullSender = sender .. "-" .. realm
             end
         end
+
         networking.ReceivedMessage(msg, distribution, fullSender)
+
     end)
+
+    -------------------------------------------------
+    -- 4. Register own ONLINE presence
+    -------------------------------------------------
+
+    C_Timer.After(2, function()
+
+        local playerName = Ambiguate(ns.globals.CHARACTERNAME, "none")
+        local now = GetTime()
+
+        networking.activeUsers[playerName] = {
+            version = ns.globals.ADDONVERSION,
+            active = true,
+            lastSeen = now
+        }
+
+        ns.db.addonStatus[playerName] = {
+            version = ns.globals.ADDONVERSION,
+            active = true,
+            lastSeen = now
+        }
+
+        networking.SendToGuild("ADDON_STATUS", {
+            state = "ONLINE",
+            version = ns.globals.ADDONVERSION
+        })
+
+    end)
+
+    -------------------------------------------------
+    -- 5. Timeout checker (live only, no DB overwrite)
+    -------------------------------------------------
+
+    C_Timer.NewTicker(15, function()
+
+        local now = GetTime()
+        local timeout = 60
+
+        for name, data in pairs(networking.activeUsers) do
+
+            if data.active and data.lastSeen and (now - data.lastSeen) > timeout then
+
+                -- update live memory
+                data.active = false
+
+                -- update persistent DB
+                if ns.db and ns.db.addonStatus and ns.db.addonStatus[name] then
+                    ns.db.addonStatus[name].active = false
+                    ns.db.addonStatus[name].lastSeen = data.lastSeen
+                end
+
+                -- refresh UI
+                if ns.ui and ns.ui.refresh then
+                ns.ui.refresh()
+                end
+
+                ns.log.debug(name .. " marked inactive (timeout)")
+
+            end
+
+        end
+
+    end)
+
+
+    -------------------------------------------------
+    -- 6. Heartbeat (keeps others updated)
+    -------------------------------------------------
+
+    C_Timer.NewTicker(30, function()
+
+        networking.SendToGuild("ADDON_STATUS", {
+            state = "ONLINE",
+            version = ns.globals.ADDONVERSION
+        })
+
+    end)
+
 end
+
 
 function networking.ReceivedMessage(msg, distribution, sender)
     -- Ignored self

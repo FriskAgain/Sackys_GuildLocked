@@ -26,6 +26,10 @@ function option_defaults.initialize()
     SGLKDB.chars = {}
     end
 
+    if type(SGLKDB.addonStatus) ~= "table" then
+    SGLKDB.addonStatus = {}
+    end
+
     ns.db = SGLKDB
 
 
