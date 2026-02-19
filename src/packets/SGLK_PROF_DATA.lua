@@ -12,8 +12,9 @@ function SGLK_PROF_DATA.handle(sender, payload)
 
     ns.db.chars = ns.db.chars or {}
 
-    -- sender er allerede "Name-Realm"
-    local key = sender
+
+    local key = string.lower(Ambiguate(sender, "none"))
+
 
     ns.db.chars[key] = ns.db.chars[key] or {}
 
@@ -24,5 +25,18 @@ function SGLK_PROF_DATA.handle(sender, payload)
     ns.db.chars[key].prof2 = payload.prof2
     ns.db.chars[key].prof2Skill = payload.prof2Skill
     ns.db.chars[key].lastSeen = time()
+
+    --Data for your own character:
+    local key = string.lower(Ambiguate(ns.globals.CHARACTERNAME, "none"))
+
+    ns.db.chars[key] = {
+        name = payload.name,
+        realm = payload.realm,
+        prof1 = payload.prof1,
+        prof1Skill = payload.prof1Skill,
+        prof2 = payload.prof2,
+        prof2Skill = payload.prof2Skill,
+        lastSeen = time()
+}
 
 end

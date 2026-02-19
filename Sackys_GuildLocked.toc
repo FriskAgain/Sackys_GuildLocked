@@ -8,4 +8,3 @@
 
 ## Include all Lua files via embeds.xml
 embeds.xml
-src/packets/addon_status.lua

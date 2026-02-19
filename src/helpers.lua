@@ -17,19 +17,13 @@ end
 function helpers.getGuildMemberData(onlineOnly)
 
     local members = {}
-
-    if not ns.db or not ns.db.chars then
+    --New code here
+    if not IsInGuild() then
         return members
     end
 
-    local realm = GetRealmName()
-
-    -- lookup online status from guild roster
-    local onlineMap = {}
-
-    if IsInGuild() then
-
-        local numMembers = GetNumGuildMembers()
+ 
+    local numMembers = GetNumGuildMembers()
 
         for i = 1, numMembers do
 
@@ -39,41 +33,29 @@ function helpers.getGuildMemberData(onlineOnly)
             if name then
 
                 local shortName = Ambiguate(name, "none")
-                local key = shortName .. "-" .. realm
+                local key = string.lower(shortName)
 
-                onlineMap[key] = online
+                if not onlineOnly or online then
 
+                    local charData = ns.db.chars and ns.db.chars[key]
+        
+                    table.insert(members, {
+        
+                        name = shortName,
+                        rank = rank or "",
+                        rank_index = rankIndex or 0,
+                        online = online and "Yes" or "No",
+        
+                        prof1 = charData and charData.prof1 or "-",
+                        prof1Skill = charData and charData.prof1Skill or "-",
+        
+                        prof2 = charData and charData.prof2 or "-",
+                        prof2Skill = charData and charData.prof2Skill or "-",
+        
+                    })
+                end
             end
-
         end
-
-    end
-
-    -- Use database as primary source
-    for key, data in pairs(ns.db.chars) do
-
-        local isOnline = onlineMap[key] or false
-
-        if not onlineOnly or isOnline then
-
-            table.insert(members, {
-
-                name = data.name or key,
-                rank = "",
-                rank_index = 0,
-                online = isOnline and "Yes" or "No",
-
-                prof1 = data.prof1 or "-",
-                prof1Skill = data.prof1Skill or "-",
-
-                prof2 = data.prof2 or "-",
-                prof2Skill = data.prof2Skill or "-",
-
-            })
-
-        end
-
-    end
 
     -- sort by name
     table.sort(members, function(a,b)
@@ -144,6 +126,7 @@ function helpers.getPlayerProfessionsClassic()
         ["Engineering"] = true,
         ["Enchanting"] = true,
         ["Skinning"] = true,
+        ["Jewelcrafting"] = true,
 
     }
 
@@ -208,7 +191,7 @@ function helpers.scanPlayerProfessions()
     local realm = GetRealmName()
 
     -- STANDARD KEY FORMAT
-    local key = name .. "-" .. realm
+    local key = string.lower(Ambiguate(name, "none"))
 
     ns.db.chars[key] = ns.db.chars[key] or {}
 

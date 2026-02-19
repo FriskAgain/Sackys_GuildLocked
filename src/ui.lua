@@ -74,6 +74,7 @@ function ui.initialize()
     )
 
     ui.refresh()
+    ns.networking.SendToGuild("REQ_VERSION", {})
 
 end
 
@@ -135,13 +136,7 @@ function ui.updateMemberList(showOnlineOnly)
         local live = ns.networking.activeUsers[name]
         local saved = ns.db.addonStatus[name]
 
-        -- If me
-        if name == Ambiguate(ns.globals.CHARACTERNAME, "none") then
-
-            member.version = ns.globals.ADDONVERSION or "-"
-            member.addon_active = true
-
-        elseif live then
+        if live then
 
             member.version = live.version or "-"
             member.addon_active = live.active

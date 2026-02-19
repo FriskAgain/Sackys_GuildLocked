@@ -45,6 +45,7 @@
     <Script file="src/restrictions/sendmail.lua" />
     <Script file="src/restrictions/receivemail.lua" />
     <Script file="src/restrictions/trade.lua" />
+    <Script file="src/restrictions/group.lua" />
 
     <!-- Sync -->
     <Script file="src/sync/base.lua" />
