@@ -1,10 +1,16 @@
 local addonName, ns = ...
 local REQ_VERSION = {}
-if not ns.packets then ns.packets = {} end
+ns.packets = ns.packets or {}
 ns.packets.REQ_VERSION = REQ_VERSION
 
+local lastReply = {} -- key: sender, value: GetTime()
+
 function REQ_VERSION.handle(sender, payload)
-    -- local rankIndex = ns.helpers.getGuildMemberRank(sender)
-    -- if type(rankIndex) ~= "number" or rankIndex >= 5 then return end
-    ns.networking.SendWhisper("RSP_VERSION", {version = ns.globals.ADDONVERSION}, sender)
+    local now = GetTime()
+    if lastReply[sender] and (now - lastReply[sender]) < 5 then
+        return
+    end
+    lastReply[sender] = now
+
+    ns.networking.SendWhisper("RSP_VERSION", { version = ns.globals.ADDONVERSION }, sender)
 end

@@ -1,15 +1,17 @@
 local addonName, ns = ...
 local RSP_VERSION = {
     updateNoticeDisplayed = false
+    lastNotififiedVersion = nil,
 }
-if not ns.packets then ns.packets = {} end
+ns.packets = ns.packets or {}
 ns.packets.RSP_VERSION = RSP_VERSION
 
 local function isNewVersionAvailable(remoteVersion, localVersion)
     local function split(v)
         local t = {}
+        v = tostring(v or "")
         for num in string.gmatch(v, "(%d+)") do
-            table.insert(t, tonumber(num))
+            t[#t+1] = tonumber(num)
         end
         return t
     end
@@ -23,16 +25,21 @@ local function isNewVersionAvailable(remoteVersion, localVersion)
 end
 
 function RSP_VERSION.handle(sender, payload)
-    if ns.ui.dataBuffer then
-        ns.ui.updateFieldValue(sender, "version", payload.version)
-        ns.ui.updateFieldValue(sender, "addon_active", true)
+    local remote = tostring(payload and payload.version or "")
+    local me = tostring(ns.globals and ns.globals.ADDONVERSION or "")
+
+    local who = Ambiguate(sender, "none")
+    if ns.ui and ns.ui.dataBuffer then
+        ns.ui.updateFieldValue(who, "version", remote ~= "" and remote or "?")
+        ns.ui.updateFieldValue(who, "addon_active", true)
     end
 
-    if not RSP_VERSION.updateNoticeDisplayed and isNewVersionAvailable(payload.version, ns.globals.ADDONVERSION) then
-        RSP_VERSION.updateNoticeDisplayed = true
-        ns.log.info("A new version is available. Please update on curseforge.")
-        C_Timer.After(1800, function()
-            RSP_VERSION.updateNoticeDisplayed = false
-        end)
+    if remote ~= ""
+        and me ~= ""
+        and isNewVersionAvailable(remote, me)
+        and (RSP_VERSION.lastNotififiedVersion ~= remote)
+    then
+        RSP_VERSION.lastNotififiedVersion = remote
+        ns.log.info("A new version is available. Please update on Curseforge.")
     end
 end

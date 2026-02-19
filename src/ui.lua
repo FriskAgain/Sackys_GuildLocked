@@ -104,7 +104,12 @@ function ui.refresh()
     local showOnlineOnly = false
 
     ui.dataBuffer = ui.updateMemberList(showOnlineOnly)
-    ns.networking.SendToGuild("REQ_VERSION", {})
+    ui._lastReqVersion = ui._lastReqVersion or 0
+    local now = GetTime()
+    if now - ui._lastReqVersion >= 30 then
+        ui._lastReqVersion = now
+        ns.networking.SendToGuild("REQ_VERSION", {})
+    end
 
     if ui.memberTable then
 
@@ -161,9 +166,9 @@ end
 
 
 function ui.updateFieldValue(name, field, value)
-    if not name or not field or not value then return end
-    for i, row in ipairs(ui.dataBuffer) do
-        if row.name == Ambiguate(name, "none") then
+    if not name or not field then return end
+    for _, row in ipairs(ui.dataBuffer or {}) do
+        if row.name and Ambiguate(row.name, "none") == Ambiguate(name, "none") then
             row[field] = value
             break
         end
