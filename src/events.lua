@@ -44,7 +44,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         ns.helpers.scanPlayerProfessions()
         ns.ui.initialize()
         ns.components.minimapbutton.create()
-        C_Timer.After(0.2, RequestGuildRoster)
+        C_Timer.After(2, RequestGuildRoster)
         self:UnregisterEvent("PLAYER_LOGIN")
         return
     
@@ -57,25 +57,43 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
     
     
     elseif event == "GUILD_ROSTER_UPDATE" then
+
         ns.globals.update()
 
-        if not didGuildInit then
-            local rank = ns.helpers.getGuildMemberRank(ns.globals.CHARACTERNAME)
-            if type(rank) == "number" then
-                didGuildInit = true
-                
-                ns.option_defaults.initialize()
-                ns.sglk.initialize()
-                ns.restrictions.sendmail.initialize()
-                ns.sync.base.initialize()
-                ns.sync.mailexception.initialize()
-            end
+    -- Make sure player is actually in guild
+        if not IsInGuild() then
+            return
         end
 
+    -- Make sure roster is populated and player exists in it
+        local rank = ns.helpers.getGuildMemberRank(ns.globals.CHARACTERNAME)
+
+        if not didGuildInit and type(rank) == "number" then
+
+            didGuildInit = true
+
+            ns.log.debug("Guild roster ready. Initializing guild systems.")
+
+            ns.option_defaults.initialize()
+            ns.sglk.initialize()
+            ns.restrictions.sendmail.initialize()
+            ns.sync.base.initialize()
+            ns.sync.mailexception.initialize()
+
+        -- Force UI update now guild is confirmed
+            if ns.ui and ns.ui.refresh then
+                ns.ui.refresh()
+            end
+
+        end
+
+    -- Always allow UI refresh after roster updates
         if ns.ui and ns.ui.frame then
             ns.ui.refresh()
         end
+
         return
+
 
     elseif event == "GROUP_ROSTER_UPDATE" then
 
