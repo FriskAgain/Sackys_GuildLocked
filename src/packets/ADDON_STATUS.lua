@@ -12,6 +12,15 @@ function ADDON_STATUS.handle(sender, payload)
     local version = payload.version or "?"
     local now = GetTime()
 
+    ns.db.chars = ns.db.chars or {}
+    ns.db.chars[key] = ns.db.chars[key] or {}
+
+    ns.db.chars[key].prof1 = payload.prof1
+    ns.db.chars[key].prof1Skill = payload.prof1Skill
+
+    ns.db.chars[key].prof2 = payload.prof2
+    ns.db.chars[key].prof2Skill = payload.prof2Skill
+
     ns.networking.activeUsers = ns.networking.activeUsers or {}
     if not ns.db then return end
     ns.db.addonStatus = ns.db.addonStatus or {}
@@ -23,12 +32,20 @@ function ADDON_STATUS.handle(sender, payload)
         ns.networking.activeUsers[key] = {
             version = version,
             active = true,
-            lastSeen = now
+            lastSeen = now,
+            prof1 = prof1,
+            prof1Skill = prof1Skill,
+            prof2 = prof2,
+            prof2Skill = prof2Skill
         }
         ns.db.addonStatus[key] = {
             version = version,
             active = true,
-            lastSeen = now
+            lastSeen = now,
+            prof1 = prof1,
+            prof1Skill = prof1Skill,
+            prof2 = prof2,
+            prof2Skill = prof2Skill
         }
 
         if newlyActive and ns.db.profile and ns.db.profile.announceStatus then
@@ -41,7 +58,7 @@ function ADDON_STATUS.handle(sender, payload)
         if user and user.active and ns.db.profile and ns.db.profile.announceStatus then
             SendChatMessage(short .. " disabled the addon", "GUILD")
         end
-        ns.networking.activeUsers[full] = {
+        ns.networking.activeUsers[key] = {
             version = version,
             active = false,
             lastSeen = now

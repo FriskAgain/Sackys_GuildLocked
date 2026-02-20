@@ -54,10 +54,20 @@ function networking.initialize()
     networking.CompressLib = LibStub:GetLibrary("LibCompress")
     networking.EncodeTable = networking.CompressLib:GetAddonEncodeTable()
 
-    networking.CommHandler:RegisterComm(networking.PREFIX, function(_, msg, distribution, sender)
+   networking.CommHandler:RegisterComm(networking.PREFIX, function(_, msg, distribution, sender)
+
         if not sender then return end
-        local full = ns.helpers and ns.helpers.getKey and ns.helpers.getKey(sender) or sender
+
+        local fullSender = sender
+        if not sender:find("-", 1, true) then
+            local realm = GetRealmName()
+            if realm and realm ~= "" then
+                fullSender = sender .. "-" .. realm
+            end
+        end
+
         networking.ReceivedMessage(msg, distribution, sender)
+
     end)
 
     -------------------------------------------------
@@ -72,13 +82,21 @@ function networking.initialize()
         networking.activeUsers[key] = {
             version = ns.globals.ADDONVERSION,
             active = true,
-            lastSeen = now
+            lastSeen = now,
+            prof1 = prof1,
+            prof1Skill = prof1Skill,
+            prof2 = prof2,
+            prof2Skill = prof2Skill
         }
 
         ns.db.addonStatus[key] = {
             version = ns.globals.ADDONVERSION,
             active = true,
-            lastSeen = now
+            lastSeen = now,
+            prof1 = prof1,
+            prof1Skill = prof1Skill,
+            prof2 = prof2,
+            prof2Skill = prof2Skill
         }
 
         networking.SendToGuild("ADDON_STATUS", {
@@ -137,17 +155,27 @@ C_Timer.NewTicker(30, function()
 
     local key = ns.globals.CHARACTERNAME
 
+    local prof1, prof1Skill, prof2, prof2Skill = ns.helpers.getPlayerProfessionsClassic()
+
     networking.activeUsers[key] = {
         version = ns.globals.ADDONVERSION,
         active = true,
-        lastSeen = now
+        lastSeen = now,
+        prof1 = prof1,
+        prof1Skill = prof1Skill,
+        prof2 = prof2,
+        prof2Skill = prof2Skill
     }
 
     if ns.db and ns.db.addonStatus then
         ns.db.addonStatus[key] = {
             version = ns.globals.ADDONVERSION,
             active = true,
-            lastSeen = now
+            lastSeen = now,
+            prof1 = prof1,
+            prof1Skill = prof1Skill,
+            prof2 = prof2,
+            prof2Skill = prof2Skill
         }
     end
 
