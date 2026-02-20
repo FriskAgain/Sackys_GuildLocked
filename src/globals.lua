@@ -5,6 +5,7 @@ local globals = {
     SERVERNAME = nil,
     GUILDRANK = nil,
     ADDONVERSION = nil,
+    PROFESSION = nil,
 }
 ns.globals = globals
 
@@ -26,4 +27,5 @@ function globals.update()
     globals.SERVERNAME = GetRealmName()
     globals.GUILDRANK = (ns.helpers and ns.helpers.getGuildMemberRank) and ns.helpers.getGuildMemberRank(UnitName("player")) or nil
     globals.ADDONVERSION = GetAddonVersion()
+    globals.PROFESSION = (ns.helpers and ns.helpers.scanPlayerProfessions) and ns.helpers.scanPlayerProfessions(UnitName("player")) or nil
 end

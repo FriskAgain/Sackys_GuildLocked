@@ -96,15 +96,6 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
 
         return
 
-
-    elseif event == "GROUP_ROSTER_UPDATE" then
-
-        if ns.restrictions and ns.restrictions.group then
-            ns.restrictions.group.handle()
-        end
-
-        return
-
     elseif event == "PARTY_INVITE_REQUEST" then
         local inviteName = arg1 and Ambiguate(arg1, "none") or nil
         if not inviteName then return end
