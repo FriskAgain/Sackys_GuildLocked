@@ -334,6 +334,8 @@ function tablev2:updateFieldValue(name, field, value)
         end
     end
 
+    self:refresh()
+
     return self
 end
 
