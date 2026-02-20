@@ -58,15 +58,7 @@ function networking.initialize()
 
         if not sender then return end
 
-        local fullSender = sender
-        if not sender:find("-") then
-            local _, realm = UnitFullName("player")
-            if realm then
-                fullSender = sender .. "-" .. realm
-            end
-        end
-
-        networking.ReceivedMessage(msg, distribution, fullSender)
+        networking.ReceivedMessage(msg, distribution, sender)
 
     end)
 
@@ -76,16 +68,16 @@ function networking.initialize()
 
     C_Timer.After(2, function()
 
-        local playerName = Ambiguate(ns.globals.CHARACTERNAME, "none")
+        local key = ns.helpers.getKey(ns.globals.CHARACTERNAME)
         local now = GetTime()
 
-        networking.activeUsers[playerName] = {
+        networking.activeUsers[key] = {
             version = ns.globals.ADDONVERSION,
             active = true,
             lastSeen = now
         }
 
-        ns.db.addonStatus[playerName] = {
+        ns.db.addonStatus[key] = {
             version = ns.globals.ADDONVERSION,
             active = true,
             lastSeen = now
@@ -145,24 +137,23 @@ C_Timer.NewTicker(30, function()
 
     local now = GetTime()
 
-    local playerName, playerRealm = UnitFullName("player")
-    local fullName = playerName .. "-" .. playerRealm
+    local key = ns.helpers.getKey(ns.globals.CHARACTERNAME)
 
-    networking.activeUsers[fullName] = {
+    networking.activeUsers[key] = {
         version = ns.globals.ADDONVERSION,
         active = true,
         lastSeen = now
     }
 
     if ns.db and ns.db.addonStatus then
-        ns.db.addonStatus[fullName] = {
+        ns.db.addonStatus[key] = {
             version = ns.globals.ADDONVERSION,
             active = true,
             lastSeen = now
         }
     end
 
-    print("HEARTBEAT UPDATE:", fullName, now)
+    print("HEARTBEAT UPDATE:", key, now)
 
     networking.SendToGuild("ADDON_STATUS", {
         state = "ONLINE",
@@ -178,11 +169,11 @@ end
 function networking.ReceivedMessage(msg, distribution, sender)
     -- Ignored self
     do
-        local playerName, playerRealm = UnitFullName("player")
-        local playerFull = (playerName and playerRealm) and (playerName .. "-" .. playerRealm) or nil
+        local key = ns.helpers.getKey(sender)
+        local playerFull = key or nil
         if (playerFull and sender == playerFull)
             or (ns.globals and ns.globals.CHARACTERNAME and sender == ns.globals.CHARACTERNAME)
-            or Ambiguate(sender, "none") == playerName
+            or Ambiguate(sender, "none") == key
         then
             return
         end

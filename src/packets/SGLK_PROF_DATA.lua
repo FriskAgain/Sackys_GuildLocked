@@ -13,7 +13,7 @@ function SGLK_PROF_DATA.handle(sender, payload)
     ns.db.chars = ns.db.chars or {}
 
 
-    local key = string.lower(Ambiguate(sender, "none"))
+    local key = ns.helpers.getKey(sender)
 
 
     ns.db.chars[key] = ns.db.chars[key] or {}

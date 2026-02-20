@@ -29,11 +29,12 @@ function group.handle()
 
         if UnitExists(unit) then
 
-            local name = Ambiguate(UnitName(unit), "none")
+            local name = UnitName(unit)
+            local key = name and ns.helpers.getKey(name) or nil
 
-            if name and not ns.helpers.isGuildMember(name) then
+            if key and not ns.helpers.isGuildMember(key) then
 
-                ns.log.debug("Non-guild member detected:", name)
+                ns.log.debug("Non-guild member detected:", key)
 
                 -- prevent loop
                 ns.restrictions.leavingGroup = true
@@ -44,7 +45,7 @@ function group.handle()
                     "You are not in my guild. Leaving group.",
                     "WHISPER",
                     nil,
-                    name
+                    key
                 )
 
                 -- reset protection after short delay

@@ -28,10 +28,10 @@ function RSP_VERSION.handle(sender, payload)
     local remote = tostring(payload and payload.version or "")
     local me = tostring(ns.globals and ns.globals.ADDONVERSION or "")
 
-    local who = Ambiguate(sender, "none")
+    local key = ns.helpers.getKey(sender)
     if ns.ui and ns.ui.dataBuffer then
-        ns.ui.updateFieldValue(who, "version", remote ~= "" and remote or "?")
-        ns.ui.updateFieldValue(who, "addon_active", true)
+        ns.ui.updateFieldValue(key, "version", remote ~= "" and remote or "?")
+        ns.ui.updateFieldValue(key, "addon_active", true)
     end
 
     if remote ~= ""

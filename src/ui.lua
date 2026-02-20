@@ -131,7 +131,7 @@ function ui.updateMemberList(showOnlineOnly)
 
     for i, member in ipairs(data) do
 
-        local name = Ambiguate(member.name, "none")
+        local name = ns.helpers.getKey(member.name)
 
         local live = ns.networking.activeUsers[name]
         local saved = ns.db.addonStatus[name]

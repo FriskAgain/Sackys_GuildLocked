@@ -2,6 +2,11 @@ local addonName, ns = ...
 local helpers = {}
 ns.helpers = helpers
 
+function helpers.getKey(name)
+    if not name then return nil end
+    return Ambiguate(name, "none")
+end
+
 function helpers.isGuildMember(target)
     if not target or not IsInGuild() then return false end
     local targetShort = Ambiguate(target, "none")
@@ -32,8 +37,7 @@ function helpers.getGuildMemberData(onlineOnly)
 
             if name then
 
-                local shortName = Ambiguate(name, "none")
-                local key = string.lower(shortName)
+                local key = helpers.getKey(name)
 
                 if not onlineOnly or online then
 
@@ -41,7 +45,7 @@ function helpers.getGuildMemberData(onlineOnly)
         
                     table.insert(members, {
         
-                        name = shortName,
+                        name = key,
                         rank = rank or "",
                         rank_index = rankIndex or 0,
                         online = online and "Yes" or "No",
@@ -188,10 +192,9 @@ function helpers.scanPlayerProfessions()
     if not ns.db then return end
 
     local name = UnitName("player")
-    local realm = GetRealmName()
 
     -- STANDARD KEY FORMAT
-    local key = string.lower(Ambiguate(name, "none"))
+    local key = helpers.getKey(name)
 
     ns.db.chars[key] = ns.db.chars[key] or {}
 
