@@ -78,6 +78,7 @@ function networking.initialize()
 
         local key = ns.globals.CHARACTERNAME
         local now = GetTime()
+        local prof1, prof1Skill, prof2, prof2Skill = ns.helpers.getPlayerProfessionsClassic()
 
         networking.activeUsers[key] = {
             version = ns.globals.ADDONVERSION,
