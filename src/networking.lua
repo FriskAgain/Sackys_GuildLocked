@@ -78,27 +78,29 @@ function networking.initialize()
 
         local key = ns.globals.CHARACTERNAME
         local now = GetTime()
-        local prof1, prof1Skill, prof2, prof2Skill = ns.helpers.getPlayerProfessionsClassic()
+        local prof = ns.helpers.getPlayerProfessionColumns(UnitName("player"))
 
         networking.activeUsers[key] = {
             version = ns.globals.ADDONVERSION,
             active = true,
             lastSeen = now,
-            prof1 = prof1,
-            prof1Skill = prof1Skill,
-            prof2 = prof2,
-            prof2Skill = prof2Skill
+            prof1 = prof.prof1,
+            prof1Skill = prof.prof1Skill,
+            prof2 = prof.prof2,
+            prof2Skill = prof.prof2Skill
         }
 
-        ns.db.addonStatus[key] = {
-            version = ns.globals.ADDONVERSION,
-            active = true,
-            lastSeen = now,
-            prof1 = prof1,
-            prof1Skill = prof1Skill,
-            prof2 = prof2,
-            prof2Skill = prof2Skill
-        }
+        if ns.db and ns.db.addonStatus then
+            ns.db.addonStatus[key] = {
+                version = ns.globals.ADDONVERSION,
+                active = true,
+                lastSeen = now,
+                prof1 = prof.prof1,
+                prof1Skill = prof.prof1Skill,
+                prof2 = prof.prof2,
+                prof2Skill = prof.prof2Skill
+            }
+        end
 
         networking.SendToGuild("ADDON_STATUS", {
             state = "ONLINE",
@@ -156,16 +158,16 @@ C_Timer.NewTicker(30, function()
 
     local key = ns.globals.CHARACTERNAME
 
-    local prof1, prof1Skill, prof2, prof2Skill = ns.helpers.getPlayerProfessionsClassic()
+    local prof = ns.helpers.getPlayerProfessionColumns(UnitName("player"))
 
     networking.activeUsers[key] = {
         version = ns.globals.ADDONVERSION,
         active = true,
         lastSeen = now,
-        prof1 = prof1,
-        prof1Skill = prof1Skill,
-        prof2 = prof2,
-        prof2Skill = prof2Skill
+        prof1 = prof.prof1,
+        prof1Skill = prof.prof1Skill,
+        prof2 = prof.prof2,
+        prof2Skill = prof.prof2Skill
     }
 
     if ns.db and ns.db.addonStatus then
@@ -173,16 +175,21 @@ C_Timer.NewTicker(30, function()
             version = ns.globals.ADDONVERSION,
             active = true,
             lastSeen = now,
-            prof1 = prof1,
-            prof1Skill = prof1Skill,
-            prof2 = prof2,
-            prof2Skill = prof2Skill
+            prof1 = prof.prof1,
+            prof1Skill = prof.prof1Skill,
+            prof2 = prof.prof2,
+            prof2Skill = prof.prof2Skill
         }
     end
 
     networking.SendToGuild("ADDON_STATUS", {
         state = "ONLINE",
-        version = ns.globals.ADDONVERSION
+        version = ns.globals.ADDONVERSION,
+        lastSeen = now,
+        prof1 = prof.prof1,
+        prof1Skill = prof.prof1Skill,
+        prof2 = prof.prof2,
+        prof2Skill = prof.prof2Skill
     })
 
 end)
