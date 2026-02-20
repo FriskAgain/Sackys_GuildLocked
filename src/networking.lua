@@ -153,8 +153,6 @@ C_Timer.NewTicker(30, function()
         }
     end
 
-    print("HEARTBEAT UPDATE:", key, now)
-
     networking.SendToGuild("ADDON_STATUS", {
         state = "ONLINE",
         version = ns.globals.ADDONVERSION
