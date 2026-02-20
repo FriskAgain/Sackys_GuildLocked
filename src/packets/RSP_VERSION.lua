@@ -1,8 +1,8 @@
 local addonName, ns = ...
 local RSP_VERSION = {
-    updateNoticeDisplayed = false
-    lastNotififiedVersion = nil,
-}
+    updateNoticeDisplayed = false,
+    lastNotififiedVersion = nil
+};
 ns.packets = ns.packets or {}
 ns.packets.RSP_VERSION = RSP_VERSION
 

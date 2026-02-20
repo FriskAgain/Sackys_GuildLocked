@@ -10,6 +10,7 @@ function ADDON_STATUS.handle(sender, payload)
     local state = payload.state
     local version = payload.version or "?"
     local now = GetTime()
+    print("RECEIVED heartbeat from", sender, "at", now)
 
     ns.networking.activeUsers = ns.networking.activeUsers or {}
     if not ns.db then return end

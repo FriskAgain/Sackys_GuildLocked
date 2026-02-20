@@ -28,12 +28,15 @@ function networking.initialize()
     -------------------------------------------------
 
     for name, data in pairs(ns.db.addonStatus) do
-        networking.activeUsers[name] = {
-            version = data.version,
-            active = data.active,
-            lastSeen = data.lastSeen
-        }
+
+    networking.activeUsers[name] = {
+        version = data.version,
+        active = data.active,
+        lastSeen = data.lastSeen or GetTime()
+    }
+
     end
+
 
     -------------------------------------------------
     -- 3. Setup AceComm
@@ -101,48 +104,73 @@ function networking.initialize()
 
     C_Timer.NewTicker(15, function()
 
-        local now = GetTime()
-        local timeout = 60
+    local now = GetTime()
+    local timeout = 60
 
-        for name, data in pairs(networking.activeUsers) do
+    for name, data in pairs(networking.activeUsers) do
 
-            if data.active and data.lastSeen and (now - data.lastSeen) > timeout then
+        if not data.lastSeen then
+            data.lastSeen = now
+        end
 
-                -- update live memory
-                data.active = false
+        if data.active and (now - data.lastSeen) > timeout then
 
-                -- update persistent DB
-                if ns.db and ns.db.addonStatus and ns.db.addonStatus[name] then
-                    ns.db.addonStatus[name].active = false
-                    ns.db.addonStatus[name].lastSeen = data.lastSeen
-                end
+            data.active = false
 
-                -- refresh UI
-                if ns.ui and ns.ui.refresh then
-                ns.ui.refresh()
-                end
-
-                ns.log.debug(name .. " marked inactive (timeout)")
-
+            if ns.db and ns.db.addonStatus and ns.db.addonStatus[name] then
+                ns.db.addonStatus[name].active = false
+                ns.db.addonStatus[name].lastSeen = data.lastSeen
             end
+
+            if ns.ui and ns.ui.refresh then
+                ns.ui.refresh()
+            end
+
+            ns.log.debug(name .. " marked inactive (timeout)")
 
         end
 
+    end
+
     end)
+
+
 
 
     -------------------------------------------------
     -- 6. Heartbeat (keeps others updated)
     -------------------------------------------------
 
-    C_Timer.NewTicker(30, function()
+C_Timer.NewTicker(30, function()
 
-        networking.SendToGuild("ADDON_STATUS", {
-            state = "ONLINE",
-            version = ns.globals.ADDONVERSION
-        })
+    local now = GetTime()
 
-    end)
+    local playerName, playerRealm = UnitFullName("player")
+    local fullName = playerName .. "-" .. playerRealm
+
+    networking.activeUsers[fullName] = {
+        version = ns.globals.ADDONVERSION,
+        active = true,
+        lastSeen = now
+    }
+
+    if ns.db and ns.db.addonStatus then
+        ns.db.addonStatus[fullName] = {
+            version = ns.globals.ADDONVERSION,
+            active = true,
+            lastSeen = now
+        }
+    end
+
+    print("HEARTBEAT UPDATE:", fullName, now)
+
+    networking.SendToGuild("ADDON_STATUS", {
+        state = "ONLINE",
+        version = ns.globals.ADDONVERSION
+    })
+
+end)
+
 
 end
 
