@@ -28,13 +28,13 @@ function networking.initialize()
     -------------------------------------------------
 
     for name, data in pairs(ns.db.addonStatus) do
-
-    networking.activeUsers[name] = {
-        version = data.version,
-        active = data.active,
-        lastSeen = data.lastSeen or GetTime()
-    }
-
+        if type(name) == "string" and name:find("-", 1, true) then
+            networking.activeUsers[name] = {
+                version = data.version,
+                active = data.active,
+                lastSeen = data.lastSeen or GetTime()
+            }
+        end
     end
 
 
@@ -55,11 +55,9 @@ function networking.initialize()
     networking.EncodeTable = networking.CompressLib:GetAddonEncodeTable()
 
     networking.CommHandler:RegisterComm(networking.PREFIX, function(_, msg, distribution, sender)
-
         if not sender then return end
-
+        local full = ns.helpers and ns.helpers.getKey and ns.helpers.getKey(sender) or sender
         networking.ReceivedMessage(msg, distribution, sender)
-
     end)
 
     -------------------------------------------------
@@ -68,7 +66,7 @@ function networking.initialize()
 
     C_Timer.After(2, function()
 
-        local key = ns.helpers.getKey(ns.globals.CHARACTERNAME)
+        local key = ns.globals.CHARACTERNAME
         local now = GetTime()
 
         networking.activeUsers[key] = {
@@ -137,7 +135,7 @@ C_Timer.NewTicker(30, function()
 
     local now = GetTime()
 
-    local key = ns.helpers.getKey(ns.globals.CHARACTERNAME)
+    local key = ns.globals.CHARACTERNAME
 
     networking.activeUsers[key] = {
         version = ns.globals.ADDONVERSION,
@@ -167,12 +165,9 @@ end
 function networking.ReceivedMessage(msg, distribution, sender)
     -- Ignored self
     do
-        local senderShort = Ambiguate(sender, "none")
-        local selfShort = Ambiguate(ns.globals.CHARACTERNAME, "none")
-
-        if senderShort == selfShort then
-            return
-        end
+        local me = ns.globals and ns.globals.CHARACTERNAME
+        if me and sender == me then return end
+        if me and not sender:find("-",1,true) and Ambiguate(sender,"none") == Ambiguate(me,"none") then return end
     end
 
     if distribution == "WHISPER" and not ns.helpers.isGuildMember(sender) then

@@ -3,7 +3,19 @@ local helpers = {}
 ns.helpers = helpers
 
 function helpers.getKey(name)
-    if not name then return nil end
+    if not name or name == "" then return nil end
+    if name:find("-", 1, true) then
+        return name
+    end
+    local realm = GetRealmName()
+    if realm and realm ~= "" then
+        return name .. "-" .. realm
+    end
+    return name
+end
+
+function helpers.getShort(name)
+    if not name or name == "" then return nil end
     return Ambiguate(name, "none")
 end
 

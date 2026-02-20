@@ -123,40 +123,31 @@ end
 
 
 function ui.updateMemberList(showOnlineOnly)
-
     local data = ns.helpers.getGuildMemberData(showOnlineOnly)
 
     ns.networking.activeUsers = ns.networking.activeUsers or {}
     ns.db.addonStatus = ns.db.addonStatus or {}
 
-    for i, member in ipairs(data) do
+    for _, member in ipairs(data) do
+        local short = Ambiguate(member.name, "none")
+        local key = ns.helpers.getKey(member.name)
 
-        local name = ns.helpers.getKey(member.name)
-
-        local live = ns.networking.activeUsers[name]
-        local saved = ns.db.addonStatus[name]
+        local live = ns.networking.activeUsers[key]
+        local saved = ns.db.addonStatus[key]
 
         if live then
-
             member.version = live.version or "-"
             member.addon_active = live.active
-
         elseif saved then
-
             member.version = saved.version or "-"
             member.addon_active = saved.active
-
         else
-
             member.version = "-"
             member.addon_active = false
-
         end
-
+        member.name = short
     end
-
     return data
-
 end
 
 

@@ -30,7 +30,7 @@ function group.handle()
         if UnitExists(unit) then
 
             local name = UnitName(unit)
-            local key = name and ns.helpers.getKey(name) or nil
+            local key = name and ns.helpers.getShort(name) or nil
 
             if key and not ns.helpers.isGuildMember(key) then
 
