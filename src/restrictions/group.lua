@@ -61,7 +61,7 @@ function group.handle()
     if not checkUnit("player") then return end
     if IsInRaid() then
         local n = GetNumGroupMembers()
-        if i = 1, n do
+        for i = 1, n do
             if not checkUnit("raid" .. i) then return end
         end
     else
