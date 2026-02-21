@@ -79,11 +79,13 @@ function networking.initialize()
     -------------------------------------------------
 
     C_Timer.After(2, function()
-
         local key = ns.globals.CHARACTERNAME
         local now = GetTime()
-        if not ns.profReady then return end
-        local prof = ns.helpers.getPlayerProfessionColumns()
+
+        local prof = { prof1="-", prof1Skill="-", prof2="-", prof2Skill="-" }
+        if ns.profReady and ns.helpers.getPlayerProfessionColumns then
+            prof = ns.helpers.getPlayerProfessionColumns()
+        end
 
         networking.activeUsers[key] = {
             version = ns.globals.ADDONVERSION,
@@ -98,6 +100,7 @@ function networking.initialize()
         if ns.db and ns.db.addonStatus then
             ns.db.addonStatus[key] = {
                 version = ns.globals.ADDONVERSION,
+                active = true,
                 lastSeen = now,
                 prof1 = prof.prof1,
                 prof1Skill = prof.prof1Skill,
@@ -114,7 +117,6 @@ function networking.initialize()
             prof2 = prof.prof2,
             prof2Skill = prof.prof2Skill
         })
-
     end)
 
     -------------------------------------------------

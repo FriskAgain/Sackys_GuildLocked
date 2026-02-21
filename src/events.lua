@@ -37,6 +37,20 @@ local function SafeUIRefresh()
     end
 end
 
+local function DelayedProfScan()
+    if ns.helpers and ns.helpers.scanPlayerProfessions then
+        ns.helpers.scanPlayerProfessions()
+    end
+end
+
+local function ProfScanBurst()
+    -- A small burst of retries to catch the moment profs become available.
+    -- Safe even if scan already worked (Scan can throttle its own SendToGuild)
+    C_Timer.After(1.0, DelayedProfScan)
+    C_Timer.After(3.0, DelayedProfScan)
+    C_Timer.After(6.0, DelayedProfScan)
+end
+
 frame:SetScript("OnEvent", function(self, event, arg1, arg2)
     if event == "ADDON_LOADED" then
         self:UnregisterEvent("ADDON_LOADED")
@@ -47,6 +61,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         ns.globals.update()
         ns.networking.initialize()
         ns.helpers.scanPlayerProfessions()
+        ProfScanBurst()
         ns.ui.initialize()
         ns.components.minimapbutton.create()
         C_Timer.After(2, RequestGuildRoster)
@@ -81,6 +96,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                     state = "ONLINE",
                     version = ns.globals.ADDONVERSION
                 })
+                C_Timer.After(1.0m DelayedProfScan)
                 SafeUIRefresh()
             end
         else
@@ -116,8 +132,13 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         return
 
     elseif event == "SKILL_LINES_CHANGED" then
-        ns.helpers.scanPlayerProfessions()
-        SafeUIRefresh()
+        events._lastSkillScan = events._lastSkillScan or 0
+        local now = GetTime()
+        if (now - events._lastSkillScan) >= 2 then
+            events._lastSkillScan = now
+            ns.helpers.scanPlayerProfessions()
+            SafeUIRefresh()
+        end
         return
 
     elseif event == "AUCTION_HOUSE_SHOW" then

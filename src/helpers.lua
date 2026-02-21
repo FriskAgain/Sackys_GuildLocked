@@ -32,50 +32,36 @@ function helpers.isGuildMember(target)
 end
 
 function helpers.getGuildMemberData(onlineOnly)
-
     local members = {}
-    --New code here
     if not IsInGuild() then
         return members
     end
 
+    if not ns.db then return members end
+    ns.db.chars = ns.db.chars or {}
  
     local numMembers = GetNumGuildMembers()
-
         for i = 1, numMembers do
-
-            local name, _, _, _, _, _, _, _, online =
-                GetGuildRosterInfo(i)
-
+            local name, _, _, _, _, _, _, _, online = GetGuildRosterInfo(i)
             if name then
-
                 local key = helpers.getKey(name)
-
-                if not onlineOnly or online then
-
-                    local charData = ns.db.chars and ns.db.chars[key]
-        
+                if key and (not onlineOnly or online) then
+                    local charData = ns.db.chars[key]
                     table.insert(members, {
-        
-                        name = key,
-                        rank = rank or "",
-                        rank_index = rankIndex or 0,
+                        key = key
+                        name = helpers.getShort(key) or key,
                         online = online and "Yes" or "No",
-        
+
                         prof1 = charData and charData.prof1 or "-",
                         prof1Skill = charData and charData.prof1Skill or "-",
-        
                         prof2 = charData and charData.prof2 or "-",
                         prof2Skill = charData and charData.prof2Skill or "-",
-        
                     })
                 end
             end
         end
-
-    -- sort by name
     table.sort(members, function(a,b)
-        return a.name < b.name
+        return (a.name or "") < (b.name or "")
     end)
 
     return members
@@ -127,12 +113,10 @@ function helpers.decrypt(data)
 end
 
 function helpers.getPlayerProfessionsClassic()
-
     local profs = {}
 
     -- whitelist based on skillName
     local PRIMARY_NAMES = {
-
         ["Blacksmithing"] = true,
         ["Leatherworking"] = true,
         ["Alchemy"] = true,
@@ -143,40 +127,28 @@ function helpers.getPlayerProfessionsClassic()
         ["Enchanting"] = true,
         ["Skinning"] = true,
         ["Jewelcrafting"] = true,
-
     }
 
     local num = GetNumSkillLines()
-
     for i = 1, num do
-
         local skillName, isHeader, _, skillRank =
             GetSkillLineInfo(i)
 
         if not isHeader
         and skillName
         and PRIMARY_NAMES[skillName] then
-
             table.insert(profs, {
-
                 name = skillName,
                 rank = skillRank or 0
-
             })
-
         end
-
     end
-
     return profs
-
 end
 
 
 function helpers.getPlayerProfessionColumns()
-
     local profList = helpers.getPlayerProfessionsClassic()
-
     local result = {
         prof1 = "-",
         prof1Skill = "-",
@@ -188,14 +160,37 @@ function helpers.getPlayerProfessionColumns()
         result.prof1 = profList[1].name
         result.prof1Skill = profList[1].rank
     end
-
     if profList[2] then
         result.prof2 = profList[2].name
         result.prof2Skill = profList[2].rank
     end
-
     return result
+end
 
+function helpers.professionsReady()
+    local n = GetNumSkillLines and GetNumSkillLines() or 0
+    if not n or n <= 0 then return false end
+
+    local PRIMARY_NAMES = {
+        ["Blacksmithing"] = true,
+        ["Leatherworking"] = true,
+        ["Alchemy"] = true,
+        ["Herbalism"] = true,
+        ["Mining"] = true,
+        ["Tailoring"] = true,
+        ["Engineering"] = true,
+        ["Enchanting"] = true,
+        ["Skinning"] = true,
+        ["Jewelcrafting"] = true,
+    }
+
+    for i = 1, n do
+        local skillName, isHeader = GetSkillLineInfo(i)
+        if not isHeader and skillName and PRIMARY_NAMES[skillName] then
+            return true
+        end
+    end
+    return false
 end
 
 local scanRunning = false
@@ -204,10 +199,16 @@ function helpers.scanPlayerProfessions()
 
     if not ns.db then return end
 
+    ns.profReady = helpers.professionsReady()
+    if not ns.profReady then
+        return
+    end
+
     local name, realm = UnitFullName("player")
+    local full = (realm and realm ~= "") and (name .. "-" .. realm) or name
 
     -- STANDARD KEY FORMAT
-    local key = helpers.getKey(name)
+    local key = helpers.getKey(full)
 
     ns.db.chars[key] = ns.db.chars[key] or {}
 
@@ -221,6 +222,20 @@ function helpers.scanPlayerProfessions()
     ns.db.chars[key].realm = realm
     ns.db.chars[key].lastSeen = time()
 
+    -- Broadcast to guild so other clients can fill ns.db.chars[key] for /YOU/
+    if ns.networking and ns.networking.SendToGuild then
+        helpers._lastProfBroadcast = helpers._lastProfBroadcast or 0
+        local now = GetTime()
+        if (now - helpers._lastProfBroadcast) >= 10 then
+            helpers._lastProfBroadcast = now
+            ns.networking.SendToGuild("SGLK_PROF_DATA", {
+                name = name,
+                realm = realm,
+                prof1 = prof.prof1,
+                prof1Skill = prof.prof1Skill,
+                prof2 = prof.prof2,
+                prof2Skill = prof.prof2Skill
+            })
+        end
+    end
 end
-
-
