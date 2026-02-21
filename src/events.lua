@@ -73,7 +73,6 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
             ns.sync.mailexception.writeTransactions()
         end
         return
-    end
 
     elseif event == "GUILD_ROSTER_UPDATE" then
         ns.globals.update()
