@@ -129,9 +129,6 @@ function ui.updateMemberList(showOnlineOnly)
     if not ns.db then return data end
     ns.db.addonStatus = ns.db.addonStatus or {}
 
-    local now = GetTime()
-    local ACTIVE_TIMEOUT = 90
-
     for _, member in ipairs(data) do
         local short = Ambiguate(member.name, "none")
         local key = ns.helpers.getKey(member.name)
@@ -139,7 +136,6 @@ function ui.updateMemberList(showOnlineOnly)
         local live = key and ns.networking.activeUsers[key] or nil
         local saved = key and ns.db.addonStatus[key] or nil
 
-        -- Version: Prefer live, fallback to saved, else "-"
         local v = "-"
         if live and live.version and live.version ~= "" then
             v = live.version
@@ -148,17 +144,18 @@ function ui.updateMemberList(showOnlineOnly)
         end
         member.version = v
 
-        -- Active:
-        -- 1) live active => true
-        -- 2) else, if we have a recent heartbeat in DB (lastSeen within 90s) => true
-        -- 3) else false
-        local active = false
-        if live and live.active == true then
-            active = true
-        elseif saved and saved.lastSeen and (now - saved.lastSeen) <= ACTIVE_TIMEOUT then
-            active = true
+        local everSeen = false
+        if saved then
+            if saved.seen == true then
+                everSeen = true
+            elseif saved.version and saved.version ~= "" and saved.version ~= "-" then
+                everSeen = true
+            end
         end
-        member.addon_active = active
+        if live and live.active == true then
+            everSeen = true
+        end
+        member.addon_active = everSeen
         member.name = short
     end
     return data

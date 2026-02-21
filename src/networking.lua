@@ -24,6 +24,16 @@ function networking.initialize()
     ns.db.addonStatus = ns.db.addonStatus or {}
     ns.db.chars = ns.db.chars or {}
 
+    -- normalize persisted addonstatus
+    for k, v in pairs(ns.db.addonStatus or {}) do
+        if type(v) == "table" then
+            -- If we have a version stored, this user has been "seen" running the adon at least once
+            if (v.seen == nil) and v.version and v.version ~= "" and v.version ~= "-" then
+                v.seen = true
+            end
+        end
+    end
+
     -------------------------------------------------
     -- 2. Restore persisted addon status
     -------------------------------------------------
