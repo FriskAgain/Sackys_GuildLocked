@@ -65,7 +65,6 @@ function ui.initialize()
     local showOnlineOnly = false
 
     ui.dataBuffer = ns.helpers.getGuildMemberData(showOnlineOnly)
-
     ui.memberTable = ns.components.tablev2:new(
         memberlist,
         metadata,
@@ -132,7 +131,6 @@ function ui.updateMemberList(showOnlineOnly)
     for _, member in ipairs(data) do
         local short = Ambiguate(member.name, "none")
         local key = ns.helpers.getKey(member.name)
-
         local live = key and ns.networking.activeUsers[key] or nil
         local saved = key and ns.db.addonStatus[key] or nil
 

@@ -23,7 +23,6 @@ function SGLK_PROF_DATA.handle(sender, payload)
     end
 
     ns.db.chars[key] = ns.db.chars[key] or {}
-
     ns.db.chars[key].name = payload.name
     ns.db.chars[key].realm = payload.realm
     ns.db.chars[key].prof1 = payload.prof1

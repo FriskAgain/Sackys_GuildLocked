@@ -19,7 +19,6 @@ function ADDON_STATUS.handle(sender, payload)
     local state  = payload.state
     local version = payload.version or "?"
     local now    = GetTime()
-
     local prof1      = payload.prof1
     local prof1Skill = payload.prof1Skill
     local prof2      = payload.prof2
@@ -30,9 +29,7 @@ function ADDON_STATUS.handle(sender, payload)
     ns.db.chars[key].prof1Skill = prof1Skill
     ns.db.chars[key].prof2 = prof2
     ns.db.chars[key].prof2Skill = prof2Skill
-
     ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
-
     local newlyActive = not ns.db.addonStatus[key].seen
 
     if state == "ONLINE" then

@@ -16,11 +16,9 @@ function tablev2:new(parent, metadata, data, row_height)
     obj.container:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
     obj.container:SetSize(700, parent:GetHeight())
     obj.container:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
-
     obj.metadata = metadata or {}
     obj.data = data or {}
     obj.row_height = row_height or 20
-
     obj.fields = {}
 
     for k, v in pairs(obj.metadata) do
@@ -28,26 +26,19 @@ function tablev2:new(parent, metadata, data, row_height)
             table.insert(obj.fields, {key = k, header = v.header, field = v.field})
         end
     end
-
     table.sort(obj.fields, function(a, b)
         return a.key < b.key
     end)
 
     obj.rows = {}
-
     obj.scrollFrame = CreateFrame("ScrollFrame", nil, obj.container, "UIPanelScrollFrameTemplate")
-
     obj.scrollFrame:SetPoint("TOPLEFT", obj.container, "TOPLEFT", 0, -obj.row_height)
     obj.scrollFrame:SetPoint("BOTTOMRIGHT", obj.container, "BOTTOMRIGHT", 0, 0)
-
     obj.content = CreateFrame("Frame", nil, obj.scrollFrame)
-
     obj.scrollFrame:SetScrollChild(obj.content)
-
     local scrollbar = obj.scrollFrame.ScrollBar
 
     scrollbar:ClearAllPoints()
-
     scrollbar:SetPoint(
         "TOPRIGHT",
         obj.scrollFrame,
@@ -55,7 +46,6 @@ function tablev2:new(parent, metadata, data, row_height)
         -66,   -- negativ værdi flytter den til venstre
         0
     )
-
     scrollbar:SetPoint(
         "BOTTOMRIGHT",
         obj.scrollFrame,
@@ -63,31 +53,20 @@ function tablev2:new(parent, metadata, data, row_height)
         -80,   -- samme offset her
         16
     )
-
     obj.sortState = {
         column = nil,
         ascending = true
     }
-
     _G.MyAddonTable = obj
-
     obj:refresh()
-
     return obj
-
 end
 
 function tablev2:refresh()
-
     self:calculateFieldWidths()
-
     self:applySort()
-
     self:updateHeader()
-
     self:updateRows()
-
-
 end
 
 
@@ -117,30 +96,22 @@ end
 if field.field == "addon_active" then
     minWidth = 120
 end
-
 fieldWidths[i] = math.max(maxWidth, minWidth)
     end
-
     self.fieldWidths = fieldWidths
-
-    
     local totalColumnWidth = 0
-    
     for _, width in ipairs(fieldWidths) do
         totalColumnWidth = totalColumnWidth + width
     end
-    
     self.totalColumnWidth = totalColumnWidth
     return self
 end
 
 function tablev2:updateHeader()
-
     if self.header then
         self.header:Hide()
         self.header:SetParent(nil)
     end
-
     self.header = CreateFrame("Frame", nil, self.container)
     self.header:SetSize(self.totalColumnWidth, self.row_height)
     self.header:SetPoint("TOPLEFT", self.container, "TOPLEFT", 0, 0)
@@ -148,27 +119,18 @@ function tablev2:updateHeader()
 local x = 0
 
 for i, field in ipairs(self.fields) do
-
     local width = self.fieldWidths[i]
-
     local button = CreateFrame("Button", nil, self.header)
 
     button:SetPoint("TOPLEFT", self.header, "TOPLEFT", x, 0)
     button:SetSize(width, self.row_height)
-
     button:SetFrameLevel(self.header:GetFrameLevel() + 10)
 
-    -- debug (kan fjernes senere)
-    -- button:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
-    -- button:SetBackdropColor(1,0,0,0.2)
-
     local fs = button:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-
     fs:SetAllPoints(button)
     fs:SetJustifyH("LEFT")
 
     local arrow = ""
-
     if self.sortState.column == field.field then
         if self.sortState.ascending then
             arrow = " |TInterface\\Buttons\\UI-SortArrow:12:12:0:0:16:16:0:16:0:16|t"
@@ -178,12 +140,9 @@ for i, field in ipairs(self.fields) do
     end
 
 fs:SetText(field.header .. "  " .. arrow)
-
     button:SetScript("OnClick", function()
-
     self:sortByColumn(field.field)
-
-end)
+    end)
 
     button:SetScript("OnEnter", function()
         fs:SetTextColor(1, 0.82, 0)
@@ -192,10 +151,8 @@ end)
     button:SetScript("OnLeave", function()
         fs:SetTextColor(1, 1, 1)
     end)
-
     x = x + width
-
-end
+    end
 end
 
 function tablev2:updateRows()
@@ -256,11 +213,8 @@ function tablev2:updateRows()
     end
 
     for rowIdx, item in ipairs(self.data) do
-
     local row = CreateFrame("Frame", nil, self.content)
-
     row:SetSize(self.totalColumnWidth, self.row_height)
-
     row:SetPoint(
         "TOPLEFT",
         self.content,
@@ -269,7 +223,7 @@ function tablev2:updateRows()
         -(rowIdx-1)*self.row_height
     )
 
-    local x = 0  -- SKAL være her, før createLine bruges
+    local x = 0
 
     -- horizontal line
     self:createLine(
@@ -282,9 +236,7 @@ function tablev2:updateRows()
     )
 
     for idx, field in ipairs(self.fields) do
-
         local width = self.fieldWidths[idx] or 60
-
         -- vertical line
         self:createLine(
             row,
@@ -294,17 +246,12 @@ function tablev2:updateRows()
             self.row_height,
             0.3, 0.3, 0.3, 1
         )
-
         local value = item[field.field]
-
         local fs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 
         fs:SetPoint("TOPLEFT", row, "TOPLEFT", x + 4, -2)
-
         fs:SetWidth(width)
-
         fs:SetText(tostring(value or ""))
-
         fs:SetJustifyH("LEFT")
 
         if type(value) == "boolean" then
@@ -316,13 +263,10 @@ function tablev2:updateRows()
                 fs:SetTextColor(1, 0.3, 0.3)
             end
         end
-
         x = x + width
-
     end
-
     table.insert(self.rows, row)
-end
+    end
 end
 
 function tablev2:updateFieldValue(name, field, value)
@@ -335,20 +279,15 @@ function tablev2:updateFieldValue(name, field, value)
     end
 
     self:refresh()
-
     return self
 end
 
 function tablev2:createLine(parent, x, y, width, height, r, g, b, a)
-
     if not parent then
         return
     end
-
     local line = parent:CreateTexture(nil, "BACKGROUND")
-
     line:SetColorTexture(r or 0.5, g or 0.5, b or 0.5, a or 1)
-
     line:SetPoint(
         "TOPLEFT",
         parent,
@@ -356,14 +295,11 @@ function tablev2:createLine(parent, x, y, width, height, r, g, b, a)
         x or 0,
         y or 0
     )
-
     line:SetSize(
         width or 1,
         height or 1
     )
-
     return line
-
 end
 
 function tablev2:sortByColumn(fieldName)
@@ -376,7 +312,6 @@ function tablev2:sortByColumn(fieldName)
     end
 
     self:applySort()
-
     self:updateHeader()
     self:updateRows()
 
@@ -385,9 +320,7 @@ end
 function tablev2:normalizeSortValue(value)
 
     if value == nil then return nil end
-
     if value == "" then return nil end
-
     if value == "-" then return nil end
 
     if type(value) == "string" then
@@ -395,9 +328,7 @@ function tablev2:normalizeSortValue(value)
         if num then return num end
         return value:lower()
     end
-
     return value
-
 end
 
 function tablev2:applySort()
@@ -453,7 +384,6 @@ table.sort(self.data, function(a, b)
         else
             return va == true and vb == false
         end
-
     end
 
     -- number handling

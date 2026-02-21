@@ -210,9 +210,7 @@ function helpers.scanPlayerProfessions()
 
     -- STANDARD KEY FORMAT
     local key = helpers.getKey(full)
-
     ns.db.chars[key] = ns.db.chars[key] or {}
-
     local prof = helpers.getPlayerProfessionColumns()
 
     ns.db.chars[key].prof1 = prof.prof1

@@ -144,7 +144,6 @@ function networking.initialize()
             end
 
             if data.active and (now - data.lastSeen) > timeout then
-
                 data.active = false
 
                 if ns.db and ns.db.addonStatus and ns.db.addonStatus[name] then
@@ -154,9 +153,7 @@ function networking.initialize()
                 if ns.ui and ns.ui.refresh then
                     ns.ui.refresh()
                 end
-
                 ns.log.debug(name .. " marked inactive (timeout)")
-
             end
         end
     end)
@@ -168,9 +165,7 @@ function networking.initialize()
 C_Timer.NewTicker(30, function()
 
     local now = GetTime()
-
     local key = ns.globals.CHARACTERNAME
-
     local prof = ns.helpers.getPlayerProfessionColumns()
 
     networking.activeUsers[key] = {
