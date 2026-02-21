@@ -22,6 +22,7 @@ function networking.initialize()
     networking.activeUsers = networking.activeUsers or {}
     ns.db = ns.db or SGLKDB
     ns.db.addonStatus = ns.db.addonStatus or {}
+    ns.db.chars = ns.db.chars or {}
 
     -------------------------------------------------
     -- 2. Restore persisted addon status
@@ -32,7 +33,12 @@ function networking.initialize()
             networking.activeUsers[name] = {
                 version = data.version,
                 active = false,
-                lastSeen = data.lastSeen or GetTime()
+                lastSeen = data.lastSeen or GetTime(),
+                    prof1 = data.prof1,
+                    prof1Skill = data.prof1Skill,
+
+                    prof2 = data.prof2,
+                    prof2Skill = data.prof2Skill
             }
         end
     end
