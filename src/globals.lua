@@ -1,4 +1,5 @@
 local addonName, ns = ...
+_G.SGLK = ns
 local globals = {
     CHARACTERNAME = nil,
     GUILDNAME = nil,
@@ -7,6 +8,7 @@ local globals = {
     ADDONVERSION = nil,
 }
 ns.globals = globals
+
 
 local function GetAddonVersion()
     if C_AddOns and C_AddOns.GetAddOnMetadata then

@@ -104,7 +104,11 @@ function networking.initialize()
 
         networking.SendToGuild("ADDON_STATUS", {
             state = "ONLINE",
-            version = ns.globals.ADDONVERSION
+            version = ns.globals.ADDONVERSION,
+            prof1 = prof.prof1,
+            prof1Skill = prof.prof1Skill,
+            prof2 = prof.prof2,
+            prof2Skill = prof.prof2Skill
         })
 
     end)
