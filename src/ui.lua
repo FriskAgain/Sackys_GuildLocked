@@ -6,7 +6,7 @@ function ui.initialize()
 
     if ui.frame then return end
 
-    ui.frame = ns.components.windowframe:Create(650, 400):Title("SGLK"):Draggable()
+    ui.frame = ns.components.windowframe:Create(650, 400):Title("Sacky's Guild Locked"):Draggable()
 
     ui.frame.background = ui.frame.frame:CreateTexture(nil, "BACKGROUND")
     ui.frame.background:SetColorTexture(0, 0, 0, 0.3)
