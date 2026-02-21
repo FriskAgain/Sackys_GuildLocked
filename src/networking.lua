@@ -82,7 +82,7 @@ function networking.initialize()
 
         local key = ns.globals.CHARACTERNAME
         local now = GetTime()
-        local prof = ns.helpers.getPlayerProfessionColumns(UnitName("player"))
+        local prof = ns.helpers.getPlayerProfessionColumns()
 
         networking.activeUsers[key] = {
             version = ns.globals.ADDONVERSION,
@@ -161,7 +161,7 @@ C_Timer.NewTicker(30, function()
 
     local key = ns.globals.CHARACTERNAME
 
-    local prof = ns.helpers.getPlayerProfessionColumns(UnitName("player"))
+    local prof = ns.helpers.getPlayerProfessionColumns()
 
     networking.activeUsers[key] = {
         version = ns.globals.ADDONVERSION,
