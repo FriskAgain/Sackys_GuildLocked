@@ -28,17 +28,17 @@ function networking.initialize()
     -- 2. Restore persisted addon status
     -------------------------------------------------
 
-    for name, data in pairs(ns.db.addonStatus) do
+    for name, data in pairs(ns.db.addonStatus or {}) do
         if type(name) == "string" and name:find("-", 1, true) then
             networking.activeUsers[name] = {
                 version = data.version,
                 active = false,
                 lastSeen = data.lastSeen or GetTime(),
-                    prof1 = data.prof1,
-                    prof1Skill = data.prof1Skill,
+                    prof1 = data.prof1 or "-",
+                    prof1Skill = data.prof1Skill or "-",
 
-                    prof2 = data.prof2,
-                    prof2Skill = data.prof2Skill
+                    prof2 = data.prof2 or "-",
+                    prof2Skill = data.prof2Skill or "-"
             }
         end
     end

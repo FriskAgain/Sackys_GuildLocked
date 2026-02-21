@@ -203,11 +203,10 @@ local scanRunning = false
 function helpers.scanPlayerProfessions()
 
     if not ns.db then return end
-
+    
     local name, realm = UnitFullName("player")
-
-    -- STANDARD KEY FORMAT
-    local key = helpers.getKey(name)
+    local full = (realm and realm ~= "") and (name .. "-" .. realm) or name
+    local key = helpers.getKey(full)
 
     ns.db.chars[key] = ns.db.chars[key] or {}
 
