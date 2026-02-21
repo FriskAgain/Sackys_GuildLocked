@@ -162,7 +162,7 @@ function networking.initialize()
     -- 6. Heartbeat (keeps others updated)
     -------------------------------------------------
 
-C_Timer.NewTicker(30, function()
+C_Timer.NewTicker(3, function()
 
     local now = GetTime()
     local key = ns.globals.CHARACTERNAME

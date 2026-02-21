@@ -10,9 +10,9 @@ function minimapbutton.create()
     minimapbutton.LDB = LibStub("LibDataBroker-1.1")
     minimapbutton.LDBIcon = LibStub("LibDBIcon-1.0")
 
-    local dataObject = minimapbutton.LDB:NewDataObject("SGLK", {
+    local dataObject = minimapbutton.LDB:NewDataObject("Sacky's GuildLocked", {
         type = "data source",
-        text = "SGLK",
+        text = "Sacky's GuildLocked",
         icon = "Interface\\AddOns\\" .. addonName .. "\\src\\images\\blp\\icon.blp",
         OnClick = function(self, button)
             if button == "LeftButton" then
@@ -26,8 +26,8 @@ function minimapbutton.create()
             end
         end,
         OnTooltipShow = function(tooltip)
-            tooltip:AddLine("SGLK", 1, 1, 1)
-            tooltip:AddLine("Left-Click: Toggle SGLK window", 0.8, 0.8, 0.8)
+            tooltip:AddLine("Sacky's GuildLocked", 1, 1, 1)
+            tooltip:AddLine("Left-Click: Toggle Sacky's GuildLocked window", 0.8, 0.8, 0.8)
             tooltip:AddLine("Right-Click: Open Options", 0.8, 0.8, 0.8)
         end,
     })

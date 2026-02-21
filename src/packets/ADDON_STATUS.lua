@@ -13,6 +13,7 @@ function ADDON_STATUS.handle(sender, payload)
 
     ns.db.chars = ns.db.chars or {}
     ns.db.addonStatus = ns.db.addonStatus or {}
+    ns.db.guildLog = ns.db.guildLog or {}
     ns.networking.activeUsers = ns.networking.activeUsers or {}
 
     local short  = ns.helpers.getShort(sender)
@@ -51,7 +52,13 @@ function ADDON_STATUS.handle(sender, payload)
         ns.db.addonStatus[key].prof2Skill = prof2Skill
 
         if newlyActive and ns.db.profile and ns.db.profile.announceStatus then
-            SendChatMessage(short .. " enabled the addon (v" .. version .. ")", "OFFICER")
+            if newlyActive and ns.db.profile and ns.db.profile.announceStatus then
+                ns.guildLog.add(
+                short .. " enabled the addon (v" .. version .. ")",
+                key
+            )
+
+end
         end
         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
         return
@@ -67,7 +74,10 @@ function ADDON_STATUS.handle(sender, payload)
         ns.db.addonStatus[key].prof2Skill = prof2Skill
 
         if newlyActive and ns.db.profile and ns.db.profile.announceStatus then
-            SendChatMessage(short .. " enabled the addon (v" .. version .. ")", "OFFICER")
+            ns.guildLog.add(
+                short .. " disabled the addon (v" .. version .. ")",
+                key
+            )
         end
         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
         return
