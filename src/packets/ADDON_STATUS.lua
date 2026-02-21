@@ -6,19 +6,23 @@ ns.packets.ADDON_STATUS = ADDON_STATUS
 
 function ADDON_STATUS.handle(sender, payload)
     if not payload or not payload.state then return end
+    if not ns.db then return end
+
     local key = ns.helpers.getKey(sender)
     if not key then return end
-    if not ns.db then return end
+
     ns.db.chars = ns.db.chars or {}
     ns.db.addonStatus = ns.db.addonStatus or {}
+    ns.networking.activeUsers = ns.networking.activeUsers or {}
 
-    local short = ns.helpers.getShort(sender)
-    local state = payload.state
+    local short  = ns.helpers.getShort(sender)
+    local state  = payload.state
     local version = payload.version or "?"
-    local now = GetTime()
-    local prof1 = payload.prof1
+    local now    = GetTime()
+
+    local prof1      = payload.prof1
     local prof1Skill = payload.prof1Skill
-    local prof2 = payload.prof2
+    local prof2      = payload.prof2
     local prof2Skill = payload.prof2Skill
 
     ns.db.chars[key] = ns.db.chars[key] or {}
@@ -27,23 +31,20 @@ function ADDON_STATUS.handle(sender, payload)
     ns.db.chars[key].prof2 = prof2
     ns.db.chars[key].prof2Skill = prof2Skill
 
-    ns.networking.activeUsers = ns.networking.activeUsers or {}
-    if not ns.db then return end
+    ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
 
-    local user = ns.networking.activeUsers[key]
+    local newlyActive = not ns.db.addonStatus[key].seen
 
     if state == "ONLINE" then
-        local newlyActive = (not user) or (not user.active)
+
         ns.networking.activeUsers[key] = {
             version = version,
             active = true,
             lastSeen = now,
-            prof1 = prof1,
-            prof1Skill = prof1Skill,
-            prof2 = prof2,
-            prof2Skill = prof2Skill
+            prof1 = prof1, prof1Skill = prof1Skill,
+            prof2 = prof2, prof2Skill = prof2Skill
         }
-        ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
+
         ns.db.addonStatus[key].version = version
         ns.db.addonStatus[key].lastSeen = now
         ns.db.addonStatus[key].seen = true
@@ -56,22 +57,19 @@ function ADDON_STATUS.handle(sender, payload)
             SendChatMessage(short .. " enabled the addon (v" .. version .. ")", "OFFICER")
         end
         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
+        return
+    end
 
-    elseif state == "OFFLINE" then
-        if user and user.active and ns.db.profile and ns.db.profile.announceStatus then
-            SendChatMessage(short .. " disabled the addon", "OFFICER")
-        end
-
-        ns.networking.activeUsers[key] = {
-            version = version,
-            active = false,
-            lastSeen = now
-        }
-        ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
+    if state == "OFFLINE" then
+        ns.networking.activeUsers[key] = ns.networking.activeUsers[key] or {}
+        ns.networking.activeUsers[key].version = version
+        ns.networking.activeUsers[key].active = false
+        ns.networking.activeUsers[key].lastSeen = now
         ns.db.addonStatus[key].version = version
         ns.db.addonStatus[key].lastSeen = now
         ns.db.addonStatus[key].seen = true
 
         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
+        return
     end
 end

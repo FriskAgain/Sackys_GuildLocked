@@ -32,12 +32,13 @@ function networking.initialize()
         if type(name) == "string" and name:find("-", 1, true) then
             networking.activeUsers[name] = {
                 version = data.version,
+                enabled = data.enabled == true,
                 active = false,
                 lastSeen = tonumber(data.lastSeen) or o,
-                    prof1 = data.prof1 or "-",
-                    prof1Skill = data.prof1Skill or "-",
-                    prof2 = data.prof2 or "-",
-                    prof2Skill = data.prof2Skill or "-"
+                prof1 = data.prof1 or "-",
+                prof1Skill = data.prof1Skill or "-",
+                prof2 = data.prof2 or "-",
+                prof2Skill = data.prof2Skill or "-"
             }
         end
     end

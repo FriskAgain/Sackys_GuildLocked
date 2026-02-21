@@ -69,10 +69,11 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         return
 
     elseif event == "PLAYER_LOGOUT" then
-        ns.networking.SendToGuild("ADDON_STATUS", { state = "OFFLINE" })
-        ns.sync.mailexception.writeTransactions()
-        self:UnregisterEvent("PLAYER_LOGOUT")
+        if ns.sync and ns.sync.mailexception and ns.sync.mailexception.writeTransactions then
+            ns.sync.mailexception.writeTransactions()
+        end
         return
+    end
 
     elseif event == "GUILD_ROSTER_UPDATE" then
         ns.globals.update()
