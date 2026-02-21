@@ -239,33 +239,12 @@ function helpers.scanPlayerProfessions()
     end
 end
 
-ns.guildLog = ns.guildLog or {}
-
-function ns.guildLog.add(message, sender)
-
-    if not ns.db then return end
-
-    ns.db.guildLog = ns.db.guildLog or {}
-
-    table.insert(ns.db.guildLog, 1, {
-        time = time(),
-        sender = sender,
-        message = message
-    })
-
-    -- limit log size
-    if #ns.db.guildLog > 500 then
-        table.remove(ns.db.guildLog)
-    end
-
-end
-
-function helpers.playerCanViewLog()
+function helpers.playerCanViewGuildLog()
 
     local rankIndex = ns.helpers.getGuildMemberRank(ns.globals.CHARACTERNAME)
 
-    local minRank = ns.db.profile.logMinRank or 3
+    local requiredRank = ns.db.profile.logMinRank or 1
 
-    return rankIndex and rankIndex <= minRank
+    return rankIndex and rankIndex <= requiredRank
 
 end

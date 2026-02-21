@@ -169,3 +169,22 @@ function ui.updateFieldValue(name, field, value)
         end
     end
 end
+
+function ui.updateGuildLog()
+
+    if not ns.helpers.playerCanViewGuildLog() then
+        return
+    end
+
+    local rows = {}
+
+    for _, entry in ipairs(ns.db.guildLog or {}) do
+        table.insert(rows, {
+            time = date("%d/%m %H:%M:%S", entry.time),
+            message = entry.message
+        })
+    end
+
+    ns.ui.guildLogTable:setData(rows)
+
+end

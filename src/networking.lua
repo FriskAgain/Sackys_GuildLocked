@@ -23,6 +23,7 @@ function networking.initialize()
     ns.db = ns.db or SGLKDB
     ns.db.addonStatus = ns.db.addonStatus or {}
     ns.db.chars = ns.db.chars or {}
+    ns.db.guildLog = ns.db.guildLog or {}
 
     -- normalize persisted addonstatus
     for k, v in pairs(ns.db.addonStatus or {}) do

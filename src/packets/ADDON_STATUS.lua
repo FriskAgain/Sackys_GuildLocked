@@ -52,13 +52,7 @@ function ADDON_STATUS.handle(sender, payload)
         ns.db.addonStatus[key].prof2Skill = prof2Skill
 
         if newlyActive and ns.db.profile and ns.db.profile.announceStatus then
-            if newlyActive and ns.db.profile and ns.db.profile.announceStatus then
-                ns.guildLog.add(
-                short .. " enabled the addon (v" .. version .. ")",
-                key
-            )
-
-end
+            ns.guildLog.send(short .. " enabled the addon (v" .. version .. ")")
         end
         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
         return
@@ -74,10 +68,7 @@ end
         ns.db.addonStatus[key].prof2Skill = prof2Skill
 
         if newlyActive and ns.db.profile and ns.db.profile.announceStatus then
-            ns.guildLog.add(
-                short .. " disabled the addon (v" .. version .. ")",
-                key
-            )
+            ns.guildLog.send(short .. " enabled the addon (v" .. version .. ")")
         end
         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
         return

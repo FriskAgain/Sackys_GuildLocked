@@ -24,6 +24,7 @@
     <Script file="src/packets/RSP_VERSION.lua" />
     <Script file="src/packets/SGLK_PROF_DATA.lua" />
     <Script file="src/packets/ADDON_STATUS.lua" />
+    <Script file="src/packets/GUILD_LOG.lua" />
 
     <!-- Components -->
     <Script file="src/components/minimapbutton.lua" />
@@ -33,6 +34,7 @@
     <!-- Core -->
     <Script file="src/log.lua" />
     <Script file="src/commands.lua" />
+    <Script file="src/guildLog.lua" />
     <Script file="src/events.lua" />
     <Script file="src/helpers.lua" />
     <Script file="src/globals.lua" />
