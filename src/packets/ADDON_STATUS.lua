@@ -64,11 +64,14 @@ function ADDON_STATUS.handle(sender, payload)
         ns.networking.activeUsers[key] = ns.networking.activeUsers[key] or {}
         ns.networking.activeUsers[key].version = version
         ns.networking.activeUsers[key].active = false
-        ns.networking.activeUsers[key].lastSeen = now
-        ns.db.addonStatus[key].version = version
-        ns.db.addonStatus[key].lastSeen = now
-        ns.db.addonStatus[key].seen = true
+        ns.db.addonStatus[key].prof1 = prof1
+        ns.db.addonStatus[key].prof1Skill = prof1Skill
+        ns.db.addonStatus[key].prof2 = prof2
+        ns.db.addonStatus[key].prof2Skill = prof2Skill
 
+        if newlyActive and ns.db.profile and ns.db.profile.announceStatus then
+            SendChatMessage(short .. " enabled the addon (v" .. version .. ")", "OFFICER")
+        end
         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
         return
     end
