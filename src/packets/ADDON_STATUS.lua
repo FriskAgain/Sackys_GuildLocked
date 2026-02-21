@@ -5,6 +5,7 @@ ns.packets = ns.packets or {}
 ns.packets.ADDON_STATUS = ADDON_STATUS
 
 function ADDON_STATUS.handle(sender, payload)
+    ns.log.info("ADDON_STATUS.handle fired from: " .. tostring(sender) .. " state=" .. tostring(payload and payload.state))
     if not payload or not payload.state then return end
     if not ns.db then return end
 
@@ -32,6 +33,7 @@ function ADDON_STATUS.handle(sender, payload)
     ns.db.chars[key].prof2Skill = prof2Skill
     ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
     local newlyActive = not ns.db.addonStatus[key].seen
+    local wasActive = ns.networking.activeUsers[key] and ns.networking.activeUsers[key].active
 
     if state == "ONLINE" then
 
@@ -51,24 +53,28 @@ function ADDON_STATUS.handle(sender, payload)
         ns.db.addonStatus[key].prof2 = prof2
         ns.db.addonStatus[key].prof2Skill = prof2Skill
 
-        if newlyActive and ns.db.profile and ns.db.profile.announceStatus then
+
+        if not wasActive then
             ns.guildLog.send(short .. " enabled the addon (v" .. version .. ")")
         end
         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
         return
     end
 
-    if state == "OFFLINE" then
+    if state == "OFFLINE" and wasActive then
         ns.networking.activeUsers[key] = ns.networking.activeUsers[key] or {}
         ns.networking.activeUsers[key].version = version
         ns.networking.activeUsers[key].active = false
+        ns.networking.activeUsers[key].lastSeen = now
         ns.db.addonStatus[key].prof1 = prof1
         ns.db.addonStatus[key].prof1Skill = prof1Skill
         ns.db.addonStatus[key].prof2 = prof2
         ns.db.addonStatus[key].prof2Skill = prof2Skill
+        ns.db.addonStatus[key].version = version
+        ns.db.addonStatus[key].lastSeen = now
 
-        if newlyActive and ns.db.profile and ns.db.profile.announceStatus then
-            ns.guildLog.send(short .. " enabled the addon (v" .. version .. ")")
+        if wasActive then
+            ns.guildLog.send(short .. " disabled the addon")
         end
         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
         return

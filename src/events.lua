@@ -53,6 +53,18 @@ end
 
 frame:SetScript("OnEvent", function(self, event, arg1, arg2)
     if event == "ADDON_LOADED" then
+        local initFrame = CreateFrame("Frame")
+
+        initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+
+        initFrame:SetScript("OnEvent", function()
+
+            ns.networking.SendToGuild("ADDON_STATUS", {
+                state = "ONLINE",
+                version = ns.globals.ADDONVERSION
+            })
+
+        end)
         self:UnregisterEvent("ADDON_LOADED")
         return
 
@@ -65,6 +77,14 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         ns.ui.initialize()
         ns.components.minimapbutton.create()
         C_Timer.After(2, RequestGuildRoster)
+        C_Timer.After(2, function()
+
+        ns.networking.SendToGuild("ADDON_STATUS", {
+            state = "ONLINE",
+            version = ns.globals.ADDONVERSION
+        })
+
+        end)
         self:UnregisterEvent("PLAYER_LOGIN")
         return
 
@@ -72,6 +92,22 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         if ns.sync and ns.sync.mailexception and ns.sync.mailexception.writeTransactions then
             ns.sync.mailexception.writeTransactions()
         end
+        local logoutFrame = CreateFrame("Frame")
+
+        logoutFrame:RegisterEvent("PLAYER_LOGOUT")
+
+        logoutFrame:SetScript("OnEvent", function()
+
+            if ns.networking and ns.networking.SendToGuild then
+
+                ns.networking.SendToGuild("ADDON_STATUS", {
+                    state = "OFFLINE",
+                    version = ns.globals.ADDONVERSION
+                })
+
+            end
+
+        end)
         return
 
     elseif event == "GUILD_ROSTER_UPDATE" then

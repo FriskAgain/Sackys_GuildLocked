@@ -2,7 +2,7 @@ local addonName, ns = ...
 
 local GUILD_LOG = {}
 ns.packets = ns.packets or {}
-ns.packets.GUIILD_LOG = GUILD_LOG
+ns.packets.GUILD_LOG = GUILD_LOG
 
 function GUILD_LOG.handle(sender, payload)
 
