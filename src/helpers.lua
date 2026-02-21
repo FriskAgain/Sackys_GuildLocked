@@ -177,23 +177,24 @@ function helpers.getPlayerProfessionColumns()
 
     local profList = helpers.getPlayerProfessionsClassic()
 
-    local prof1 = "-"
-    local prof1Skill = "-"
-
-    local prof2 = "-"
-    local prof2Skill = "-"
+    local result = {
+        prof1 = "-",
+        prof1Skill = "-",
+        prof2 = "-",
+        prof2Skill = "-"
+    }
 
     if profList[1] then
-        prof1 = profList[1].name
-        prof1Skill = profList[1].rank
+        result.prof1 = profList[1].name
+        result.prof1Skill = profList[1].rank
     end
 
     if profList[2] then
-        prof2 = profList[2].name
-        prof2Skill = profList[2].rank
+        result.prof2 = profList[2].name
+        result.prof2Skill = profList[2].rank
     end
 
-    return prof1, prof1Skill, prof2, prof2Skill
+    return result
 
 end
 
@@ -203,22 +204,21 @@ function helpers.scanPlayerProfessions()
 
     if not ns.db then return end
 
-    local name = UnitName("player")
+    local name, realm = UnitFullName("player")
 
     -- STANDARD KEY FORMAT
     local key = helpers.getKey(name)
 
     ns.db.chars[key] = ns.db.chars[key] or {}
 
-    local prof1, prof1Skill, prof2, prof2Skill =
-        helpers.getPlayerProfessionColumns()
+    local prof = helpers.getPlayerProfessionColumns()
 
+    ns.db.chars[key].prof1 = prof.prof1
+    ns.db.chars[key].prof1Skill = prof.prof1Skill
+    ns.db.chars[key].prof2 = prof.prof2
+    ns.db.chars[key].prof2Skill = prof.prof2Skill
     ns.db.chars[key].name = name
     ns.db.chars[key].realm = realm
-    ns.db.chars[key].prof1 = prof1
-    ns.db.chars[key].prof1Skill = prof1Skill
-    ns.db.chars[key].prof2 = prof2
-    ns.db.chars[key].prof2Skill = prof2Skill
     ns.db.chars[key].lastSeen = time()
 
 end

@@ -82,6 +82,7 @@ function networking.initialize()
 
         local key = ns.globals.CHARACTERNAME
         local now = GetTime()
+        if not ns.profReady then return end
         local prof = ns.helpers.getPlayerProfessionColumns()
 
         networking.activeUsers[key] = {
@@ -122,33 +123,31 @@ function networking.initialize()
 
     C_Timer.NewTicker(15, function()
 
-    local now = GetTime()
-    local timeout = 60
+        local now = GetTime()
+        local timeout = 60
 
-    for name, data in pairs(networking.activeUsers) do
+        for name, data in pairs(networking.activeUsers) do
 
-        if not data.lastSeen then
-            data.lastSeen = now
-        end
-
-        if data.active and (now - data.lastSeen) > timeout then
-
-            data.active = false
-
-            if ns.db and ns.db.addonStatus and ns.db.addonStatus[name] then
-                ns.db.addonStatus[name].lastSeen = data.lastSeen
+            if not data.lastSeen then
+                data.lastSeen = now
             end
 
-            if ns.ui and ns.ui.refresh then
-                ns.ui.refresh()
+            if data.active and (now - data.lastSeen) > timeout then
+
+                data.active = false
+
+                if ns.db and ns.db.addonStatus and ns.db.addonStatus[name] then
+                    ns.db.addonStatus[name].lastSeen = data.lastSeen
+                end
+
+                if ns.ui and ns.ui.refresh then
+                    ns.ui.refresh()
+                end
+
+                ns.log.debug(name .. " marked inactive (timeout)")
+
             end
-
-            ns.log.debug(name .. " marked inactive (timeout)")
-
         end
-
-    end
-
     end)
 
     -------------------------------------------------
