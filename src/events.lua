@@ -96,7 +96,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                     state = "ONLINE",
                     version = ns.globals.ADDONVERSION
                 })
-                C_Timer.After(1.0m DelayedProfScan)
+                C_Timer.After(1.0, DelayedProfScan)
                 SafeUIRefresh()
             end
         else
