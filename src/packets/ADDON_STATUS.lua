@@ -43,15 +43,14 @@ function ADDON_STATUS.handle(sender, payload)
             prof2 = prof2,
             prof2Skill = prof2Skill
         }
-        ns.db.addonStatus[key] = {
-            version = version,
-            active = true,
-            lastSeen = now,
-            prof1 = prof1,
-            prof1Skill = prof1Skill,
-            prof2 = prof2,
-            prof2Skill = prof2Skill
-        }
+        ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
+        ns.db.addonStatus[key].version = version
+        ns.db.addonStatus[key].lastSeen = now
+        ns.db.addonStatus[key].seen = true
+        ns.db.addonStatus[key].prof1 = prof1
+        ns.db.addonStatus[key].prof1Skill = prof1Skill
+        ns.db.addonStatus[key].prof2 = prof2
+        ns.db.addonStatus[key].prof2Skill = prof2Skill
 
         if newlyActive and ns.db.profile and ns.db.profile.announceStatus then
             SendChatMessage(short .. " enabled the addon (v" .. version .. ")", "OFFICER")
@@ -68,11 +67,10 @@ function ADDON_STATUS.handle(sender, payload)
             active = false,
             lastSeen = now
         }
-        ns.db.addonStatus[key] = {
-            version = version,
-            active = false,
-            lastSeen = now
-        }
+        ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
+        ns.db.addonStatus[key].version = version
+        ns.db.addonStatus[key].lastSeen = now
+        ns.db.addonStatus[key].seen = true
 
         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
     end

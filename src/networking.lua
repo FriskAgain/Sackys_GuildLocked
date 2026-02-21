@@ -31,7 +31,7 @@ function networking.initialize()
         if type(name) == "string" and name:find("-", 1, true) then
             networking.activeUsers[name] = {
                 version = data.version,
-                active = data.active,
+                active = false,
                 lastSeen = data.lastSeen or GetTime()
             }
         end
@@ -55,7 +55,6 @@ function networking.initialize()
     networking.EncodeTable = networking.CompressLib:GetAddonEncodeTable()
 
    networking.CommHandler:RegisterComm(networking.PREFIX, function(_, msg, distribution, sender)
-
         if not sender then return end
 
         local fullSender = sender
@@ -66,8 +65,7 @@ function networking.initialize()
             end
         end
 
-        networking.ReceivedMessage(msg, distribution, sender)
-
+        networking.ReceivedMessage(msg, distribution, fullSender)
     end)
 
     -------------------------------------------------
@@ -93,7 +91,6 @@ function networking.initialize()
         if ns.db and ns.db.addonStatus then
             ns.db.addonStatus[key] = {
                 version = ns.globals.ADDONVERSION,
-                active = true,
                 lastSeen = now,
                 prof1 = prof.prof1,
                 prof1Skill = prof.prof1Skill,
@@ -133,7 +130,6 @@ function networking.initialize()
             data.active = false
 
             if ns.db and ns.db.addonStatus and ns.db.addonStatus[name] then
-                ns.db.addonStatus[name].active = false
                 ns.db.addonStatus[name].lastSeen = data.lastSeen
             end
 
@@ -148,9 +144,6 @@ function networking.initialize()
     end
 
     end)
-
-
-
 
     -------------------------------------------------
     -- 6. Heartbeat (keeps others updated)
@@ -177,7 +170,6 @@ C_Timer.NewTicker(30, function()
     if ns.db and ns.db.addonStatus then
         ns.db.addonStatus[key] = {
             version = ns.globals.ADDONVERSION,
-            active = true,
             lastSeen = now,
             prof1 = prof.prof1,
             prof1Skill = prof.prof1Skill,
@@ -197,10 +189,7 @@ C_Timer.NewTicker(30, function()
     })
 
 end)
-
-
 end
-
 
 function networking.ReceivedMessage(msg, distribution, sender)
     -- Ignored self
@@ -254,7 +243,6 @@ function networking.SendToGuild(type, payload)
     networking._SendMessage(type, payload, "GUILD", nil)
 
 end
-
 
 function networking.SendWhisper(type, payload, target)
     networking._SendMessage(type, payload, "WHISPER", target)
