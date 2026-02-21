@@ -1,7 +1,7 @@
 local addonName, ns = ...
 local MAX_SAFE_MSG = 240
 local networking = {
-    PREFIX = "SGLK01"
+    PREFIX = "SGLK02"
 }
 ns.networking = networking
 
