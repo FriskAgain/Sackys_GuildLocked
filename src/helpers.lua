@@ -197,7 +197,6 @@ end
 local scanRunning = false
 
 function helpers.scanPlayerProfessions()
-
     if not ns.db then return end
 
     ns.profReady = helpers.professionsReady()
@@ -206,12 +205,17 @@ function helpers.scanPlayerProfessions()
     end
 
     local name, realm = UnitFullName("player")
-    local full = (realm and realm ~= "") and (name .. "-" .. realm) or name
+    if not name then return end
+    realm = realm or GetRealmName() or ""
+    local full = (realm ~= "") and (name .. "-" .. realm) or name
 
-    -- STANDARD KEY FORMAT
     local key = helpers.getKey(full)
+    if not key then return end
+
+    ns.db.chars = ns.db.chars or {}
     ns.db.chars[key] = ns.db.chars[key] or {}
-    local prof = helpers.getPlayerProfessionColumns()
+
+    local prof = helpers.getPlayerProfessionColumns() or { prof1="-", prof1Skill="-", prof2="-", prof2Skill="-" }
 
     ns.db.chars[key].prof1 = prof.prof1
     ns.db.chars[key].prof1Skill = prof.prof1Skill
@@ -221,12 +225,45 @@ function helpers.scanPlayerProfessions()
     ns.db.chars[key].realm = realm
     ns.db.chars[key].lastSeen = time()
 
-    -- Broadcast to guild so other clients can fill ns.db.chars[key] for /YOU/
+    local sig = table.concat({
+        tostring(prof.prof1), tostring(prof.prof1Skill),
+        tostring(prof.prof2), tostring(prof.prof2Skill),
+    }, "|")
+
+    local now = GetTime()
+
+    --------------------------------------------------------------------
+    -- 1) Broadcast ADDON_STATUS with profs (updates activeUsers/addonStatus/UI paths)
+    --------------------------------------------------------------------
+    if ns.networking and ns.networking.SendToGuild and ns.globals and ns.globals.ADDONVERSION then
+        helpers._lastStatusBroadcast = helpers._lastStatusBroadcast or 0
+        helpers._lastStatusSig = helpers._lastStatusSig or ""
+        if sig ~= helpers._lastStatusSig or (now - helpers._lastStatusBroadcast) >= 30 then
+            helpers._lastStatusBroadcast = now
+            helpers._lastStatusSig = sig
+
+            ns.networking.SendToGuild("ADDON_STATUS", {
+                state = "ONLINE",
+                version = ns.globals.ADDONVERSION,
+                prof1 = prof.prof1,
+                prof1Skill = prof.prof1Skill,
+                prof2 = prof.prof2,
+                prof2Skill = prof.prof2Skill
+            })
+        end
+    end
+
+    --------------------------------------------------------------------
+    -- 2) Broadcast SGLK_PROF_DATA
+    --------------------------------------------------------------------
     if ns.networking and ns.networking.SendToGuild then
         helpers._lastProfBroadcast = helpers._lastProfBroadcast or 0
-        local now = GetTime()
-        if (now - helpers._lastProfBroadcast) >= 10 then
+        helpers._lastProfSig = helpers._lastProfSig or ""
+
+        if sig ~= helpers._lastProfSig or (now - helpers._lastProfBroadcast) >= 30 then
             helpers._lastProfBroadcast = now
+            helpers._lastProfSig = sig
+
             ns.networking.SendToGuild("SGLK_PROF_DATA", {
                 name = name,
                 realm = realm,

@@ -39,18 +39,21 @@ function networking.initialize()
     -- 2. Restore persisted addon status
     -------------------------------------------------
 
+    local now = GetTime()
+
     for name, data in pairs(ns.db.addonStatus or {}) do
-        if type(name) == "string" and name:find("-", 1, true) then
-            networking.activeUsers[name] = {
-                version = data.version,
-                enabled = data.enabled == true,
-                active = false,
-                lastSeen = tonumber(data.lastSeen) or o,
-                prof1 = data.prof1 or "-",
-                prof1Skill = data.prof1Skill or "-",
-                prof2 = data.prof2 or "-",
-                prof2Skill = data.prof2Skill or "-"
-            }
+        if type(name) == "string" and name:find("-", 1, true) and type(data) == "table" then
+            networking.activeUsers[name] = networking.activeUsers[name] or {}
+
+            networking.activeUsers[name].version = data.version
+            networking.activeUsers[name].enabled = (data.enabled == true) or (data.seen == true and data.enable ~= false)
+            networking.activeUsers[name].active = false
+            networking.activeUsers[name].lastSeen = tonumber(data.lastSeen) or now
+
+            networking.activeUsers[name].prof1 = data.prof1 or "-"
+            networking.activeUsers[name].prof1Skill = data.prof1Skill or "-"
+            networking.activeUsers[name].prof2 = data.prof2 or "-"
+            networking.activeUsers[name].prof2Skill = data.prof2Skill or "-"
         end
     end
 
@@ -108,15 +111,16 @@ function networking.initialize()
         }
 
         if ns.db and ns.db.addonStatus then
-            ns.db.addonStatus[key] = {
-                version = ns.globals.ADDONVERSION,
-                active = true,
-                lastSeen = now,
-                prof1 = prof.prof1,
-                prof1Skill = prof.prof1Skill,
-                prof2 = prof.prof2,
-                prof2Skill = prof.prof2Skill
-            }
+            ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
+            ns.db.addonStatus[key].version = ns.globals.ADDONVERSION
+            ns.db.addonStatus[key].lastSeen = now
+            ns.db.addonStatus[key].seen = true
+            ns.db.addonStatus[key].enabled = true
+
+            ns.db.addonStatus[key].prof1 = prof.prof1
+            ns.db.addonStatus[key].prof1Skill = prof.prof1Skill
+            ns.db.addonStatus[key].prof2 = prof.prof2
+            ns.db.addonStatus[key].prof2Skill = prof.prof2Skill
         end
 
         networking.SendToGuild("ADDON_STATUS", {
@@ -163,44 +167,50 @@ function networking.initialize()
     -- 6. Heartbeat (keeps others updated)
     -------------------------------------------------
 
-C_Timer.NewTicker(3, function()
+    C_Timer.NewTicker(30, function()
+        local now = GetTime()
+        local key = ns.globals and ns.globals.CHARACTERNAME
+        if not key then return end
 
-    local now = GetTime()
-    local key = ns.globals.CHARACTERNAME
-    local prof = ns.helpers.getPlayerProfessionColumns()
+        local prof = { prof1="-", prof1Skill="-", prof2="-", prof2Skill="-" }
+        if ns.profReady and ns.helpers and ns.helpers.getPlayerProfessionColumns then
+            prof = ns.helpers.getPlayerProfessionColumns()
+        end
 
-    networking.activeUsers[key] = {
-        version = ns.globals.ADDONVERSION,
-        active = true,
-        lastSeen = now,
-        prof1 = prof.prof1,
-        prof1Skill = prof.prof1Skill,
-        prof2 = prof.prof2,
-        prof2Skill = prof.prof2Skill
-    }
+        -- Update Live Cache
+        networking.activeUsers[key] = networking.activeUsers[key] or {}
+        local u = networking.activeUsers[key]
+        u.version = ns.globals.ADDONVERSION
+        u.active = true
+        u.lastSeen = now
+        u.prof1 = prof.prof1
+        u.prof1Skill = prof.prof1Skill
+        u.prof2 = prof.prof2
+        u.prof2Skill = prof.prof2Skill
 
-    if ns.db and ns.db.addonStatus then
-        ns.db.addonStatus[key] = {
+        -- Update DB snapshot
+        if ns.db and ns.db.addonStatus then
+            ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
+            local s = ns.db.addonStatus[key]
+            s.version = ns.globals.ADDONVERSION
+            s.lastSeen = now
+            s.seen = true
+            s.enabled = true
+            s.prof1 = prof.prof1
+            s.prof1Skill = prof.prof1Skill
+            s.prof2 = prof.prof2
+            s.prof2Skill = prof.prof2Skill
+        end
+
+        networking.SendToGuild("ADDON_STATUS", {
+            state = "ONLINE",
             version = ns.globals.ADDONVERSION,
-            lastSeen = now,
             prof1 = prof.prof1,
             prof1Skill = prof.prof1Skill,
             prof2 = prof.prof2,
             prof2Skill = prof.prof2Skill
-        }
-    end
-
-    networking.SendToGuild("ADDON_STATUS", {
-        state = "ONLINE",
-        version = ns.globals.ADDONVERSION,
-        lastSeen = now,
-        prof1 = prof.prof1,
-        prof1Skill = prof.prof1Skill,
-        prof2 = prof.prof2,
-        prof2Skill = prof.prof2Skill
-    })
-
-end)
+        })
+    end)
 end
 
 function networking.ReceivedMessage(msg, distribution, sender)
@@ -247,6 +257,7 @@ function networking.ReceivedMessage(msg, distribution, sender)
 end
 
 function networking.SendToGuild(type, payload)
+    if ns.options and ns.options.debug then ns.log.debug("TX "..tostring(type)) end
 
     if not networking._SendMessage then
         return

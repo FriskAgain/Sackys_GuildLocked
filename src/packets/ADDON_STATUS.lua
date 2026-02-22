@@ -10,7 +10,9 @@ local function safeVal(v, fallback)
 end
 
 function ADDON_STATUS.handle(sender, payload)
-    ns.log.info("ADDON_STATUS.handle fired from: " .. tostring(sender) .. " state=" .. tostring(payload and payload.state))
+    if ns.options and ns.options.debug then
+        ns.log.info("ADDON_STATUS.handle fired from: " .. tostring(sender) .. " state=" .. tostring(payload and payload.state))
+    end
     if not payload or not payload.state then return end
     if not ns.db then return end
 

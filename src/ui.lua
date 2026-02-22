@@ -20,8 +20,8 @@ function ui.initialize()
     end
 
     local logBtn = CreateFrame("Button", nil, ui.frame.frame, "UIPanelButtonTemplate")
-    logBtn:SetSize(100, 22)
-    logBtn:SetPoint("TOPRIGHT", ui.frame.frame, "TOPRIGHT", -12, -6)
+    logBtn:SetSize(80, 18)
+    logBtn:SetPoint("TOPRIGHT", ui.frame.frame, "TOPRIGHT", -36, -2)
     logBtn:SetText("Officer Log")
 
     logBtn:SetScript("OnClick", function()
@@ -170,8 +170,8 @@ function ui.ensureGuildLogUI()
     ui.guildLogTable = ns.components.tablev2:new(holder, meta, {}, 18)
 
     local clearBtn = CreateFrame("Button", nil, ui.guildLogFrame.frame, "UIPanelButtonTemplate")
-    clearBtn:SetSize(90, 22)
-    clearBtn:SetPoint("TOPRIGHT", ui.guildLogFrame.frame, "TOPRIGHT", -12, -6)
+    clearBtn:SetSize(60, 18)
+    clearBtn:SetPoint("TOPRIGHT", ui.guildLogFrame.frame, "TOPRIGHT", -36, -2)
     clearBtn:SetText("Clear")
     clearBtn:SetScript("OnClick", function()
         if not ns.db then return end

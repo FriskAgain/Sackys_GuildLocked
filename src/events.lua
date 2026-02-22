@@ -71,20 +71,12 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
     elseif event == "PLAYER_LOGIN" then
         ns.option_defaults.initialize()
         ns.globals.update()
-        ns.networking.initialize()
         ns.helpers.scanPlayerProfessions()
+        ns.networking.initialize()
         ProfScanBurst()
         ns.ui.initialize()
         ns.components.minimapbutton.create()
         C_Timer.After(2, RequestGuildRoster)
-        C_Timer.After(2, function()
-
-        ns.networking.SendToGuild("ADDON_STATUS", {
-            state = "ONLINE",
-            version = ns.globals.ADDONVERSION
-        })
-
-        end)
         self:UnregisterEvent("PLAYER_LOGIN")
         return
 
