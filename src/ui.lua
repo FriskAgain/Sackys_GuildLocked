@@ -250,23 +250,18 @@ end
 
 function ui.updateGuildLog()
     if not ns or not ns.db or not ns.db.guildLog then return end
-    if not ui.guildLogTable then return end
-
+    if not ns.ui or not ns.ui.guildLogTable or not ns.ui.guildLogTable.setData then return end
     if ns.helpers and ns.helpers.playerCanViewGuildLog and not ns.helpers.playerCanViewGuildLog() then
         return
     end
 
     local rows = {}
     for _, entry in ipairs(ns.db.guildLog or {}) do
+        local t = entry.recvTime or entry.time or entry.sendTime
         rows[#rows+1] = {
-            ts = entry.time or 0,
-            time = date("%d/%m %H:%M:%S", entry.time or time()),
-            message = entry.message or ""
+            time = date("%d/%m %H:%M:%S", t),
+            message = entry.message
         }
     end
-
-    ui.guildLogTable.data = rows
-    if ui.guildLogTable.refresh then
-        ui.guildLogTable:refresh()
-    end
+    ns.ui.guildLogTable:setData(rows)
 end
