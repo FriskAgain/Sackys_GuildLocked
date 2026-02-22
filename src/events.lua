@@ -84,22 +84,12 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         if ns.sync and ns.sync.mailexception and ns.sync.mailexception.writeTransactions then
             ns.sync.mailexception.writeTransactions()
         end
-        local logoutFrame = CreateFrame("Frame")
-
-        logoutFrame:RegisterEvent("PLAYER_LOGOUT")
-
-        logoutFrame:SetScript("OnEvent", function()
-
-            if ns.networking and ns.networking.SendToGuild then
-
-                ns.networking.SendToGuild("ADDON_STATUS", {
-                    state = "OFFLINE",
-                    version = ns.globals.ADDONVERSION
-                })
-
-            end
-
-        end)
+        if ns.networking and ns.networking.SendToGuild and ns.networking.CommHandler then
+            ns.networking.SendToGuild("ADDON_STATUS", {
+                state = "OFFLINE",
+                version = ns.globals and ns.globals.ADDONVERSION or "?"
+            })
+        end
         return
 
     elseif event == "GUILD_ROSTER_UPDATE" then

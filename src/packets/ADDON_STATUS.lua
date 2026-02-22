@@ -37,7 +37,8 @@ function ADDON_STATUS.handle(sender, payload)
     ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
     local s = ns.db.addonStatus[key]
 
-    local wasActive = (ns.networking.activeUsers[key] and ns.networking.activeUsers[key].active) == true
+    local wasSeen = (s.seen == true)
+    local wasEnabled = (s.enabled ~= false)
 
     if prof1 ~= nil then ns.db.chars[key].prof1 = prof1 end
     if prof1Skill ~= nil then ns.db.chars[key].prof1Skill = prof1Skill end
@@ -47,12 +48,15 @@ function ADDON_STATUS.handle(sender, payload)
     s.version = version
     s.lastSeen = now
     s.seen = true
-    if prof1 ~= nil then ns.db.addonStatus[key].prof1 = prof1 end
-    if prof1Skill ~= nil then ns.db.addonStatus[key].prof1Skill = prof1Skill end
-    if prof2 ~= nil then ns.db.addonStatus[key].prof2 = prof2 end
-    if prof2Skill ~= nil then ns.db.addonStatus[key].prof2Skill = prof2Skill end
+    if prof1 ~= nil then s.prof1 = prof1 end
+    if prof1Skill ~= nil then s.prof1Skill = prof1Skill end
+    if prof2 ~= nil then s.prof2 = prof2 end
+    if prof2Skill ~= nil then s.prof2Skill = prof2Skill end
 
     if state == "ONLINE" then
+        s.enabled = true
+        s._missingLogged = nil
+
         ns.networking.activeUsers[key] = {
             version = version,
             active = true,
@@ -62,13 +66,8 @@ function ADDON_STATUS.handle(sender, payload)
             prof2 = safeVal(prof2, "-"),
             prof2Skill = safeVal(prof2Skill, "-"),
         }
-        ns.db.addonStatus[key].version = version
-        ns.db.addonStatus[key].lastSeen = now
-        ns.db.addonStatus[key].seen = true
-        ns.db.addonStatus[key].enabled = true
-        ns.db.addonStatus[key]._missingLogged = nil
 
-        if not wasActive and ns.guildLog and ns.guildLog.send then
+        if wasSeen and (wasEnabled == false) and ns.guildLog and ns.guildLog.send then
             ns.guildLog.send(short .. " enabled the addon (v" .. version .. ")", { broadcast = true })
         end
 
@@ -78,11 +77,8 @@ function ADDON_STATUS.handle(sender, payload)
 
     if state == "OFFLINE" then
         ns.networking.activeUsers[key] = ns.networking.activeUsers[key] or {}
-        ns.networking.activeUsers[key].version = version
         ns.networking.activeUsers[key].active = false
         ns.networking.activeUsers[key].lastSeen = now
-
-        if ns.ui and ns.ui.refresh then ns.ui.refresh() end
         return
     end
 end
