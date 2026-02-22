@@ -35,6 +35,29 @@ function networking.initialize()
         end
     end
 
+    -- Guild online cache
+    networking.onlineSet = networking.onlineSet or {}
+
+    local function refreshOnlineSet()
+        wipe(networking.onlineSet)
+        if not IsInGuild() then return end
+
+        local n = GetNumGuildMembers()
+        if not n or n <= 0 then return end
+
+        for i = 1, n do
+            local name, _, _, _, _, _, _, _, online = GetGuildRosterInfo(i)
+            if name and online then
+                local key = ns.helpers.getKey(name)
+                if key then
+                    networking.onlineSet[key] = true
+                end
+            end
+        end
+    end
+    refreshOnlineSet()
+    C_Timer.NewTicker(15, refreshOnlineSet)
+
     -------------------------------------------------
     -- 2. Restore persisted addon status
     -------------------------------------------------
@@ -222,6 +245,9 @@ function networking.initialize()
         local now = GetTime()
         local GRACE = 45 -- Seconds (Give time after login/reload)
 
+        local me = ns.helpers.getKey(ns.globals and ns.globals.CHARACTERNAME)
+        local onlineSet = networking.onlineSet or {}
+        
         for key, _ in pairs(onlineSet) do
             if key ~= me then
                 local u = networking.activeUsers and networking.activeUsers[key]
