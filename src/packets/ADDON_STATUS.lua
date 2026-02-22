@@ -48,7 +48,10 @@ function ADDON_STATUS.handle(sender, payload)
 
     if state == "ONLINE" then
         -- ONLINE implies enabled
+        s.seen = true
         s.enabled = true
+        s.version = version
+        s.lastSeen = now
         s._missingLogged = nil
 
         ns.networking.activeUsers[key] = ns.networking.activeUsers[key] or {}
@@ -56,7 +59,7 @@ function ADDON_STATUS.handle(sender, payload)
         ns.networking.activeUsers[key].version = version
         ns.networking.activeUsers[key].lastSeen = now
 
-        if wasSeen and wasDisabled and not isReloadJoin() then
+        if wasSeen and wasDisabled and (not isReloadRejoin()) then
             if ns.guildLog and ns.guildLog.send then
                 ns.guildLog.send(short .. " enabled the addon (v" .. version .. ")", { broadcast = true })
             end
@@ -64,7 +67,6 @@ function ADDON_STATUS.handle(sender, payload)
 
         s._lastOfflineAt = nil
         ns.db.addonStatus[key] = s
-
         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
         return
     end
@@ -73,13 +75,16 @@ function ADDON_STATUS.handle(sender, payload)
         -- OFFLINE implies disabled (Suppress logging if it's likely /reload)
         s._lastOfflineAt = now
         s.enabled = false
+        s.version = version
+        s.lastSeen = now
+        s.seen = true
 
         ns.networking.activeUsers[key] = ns.networking.activeUsers[key] or {}
         ns.networking.activeUsers[key].active = false
         ns.networking.activeUsers[key].version = version
         ns.networking.activeUsers[key].lastSeen = now
 
-        if wasEnabled and not isReloadRejoin() then
+        if wasEnabled and (not isReloadRejoin()) then
             if ns.guildLog and ns.guildLog.send then
                 ns.guildLog.send(short .. " disabled the addon", { broadcast = true })
             end

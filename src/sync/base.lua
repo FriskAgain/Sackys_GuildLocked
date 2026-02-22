@@ -6,6 +6,13 @@ local base = {
     activeUsers = {},
     selectedUsers = {},
 }
+local function whisperTarget(key)
+    if ns.helpers and ns.helpers.getShort then
+        return ns.helpers.getShort(key)
+    end
+    -- fallback
+    return (type(key) == "string" and key:match("^([^%-]+)")) or key
+end
 if not ns.sync then ns.sync = {} end
 ns.sync.base = base
 
@@ -44,14 +51,16 @@ function base.randomSelectUsers()
     end
 
     ns.log.info("Synchronization started")
-    for _, user in ipairs(base.selectedUsers) do
-        ns.networking.SendWhisper("REQ_MAIL_EXCEPTIONS", {}, user)
+    for _, userKey in ipairs(base.selectedUsers) do
+        ns.networking.SendWhisper("REQ_MAIL_EXCEPTIONS", {}, whisperTarget(userKey))
     end
 end
 
 function base:registerActiveUser(name)
-    if not tContains(base.activeUsers, name) then
-        table.insert(base.activeUsers, name)
-        ns.log.debug("SyncBase: Active user registered: " .. tostring(name))
+    local key = (ns.helpers and ns.helpers.getKey) and ns.helpers.getKey(name) or name
+    if not key then return end
+    if not tContains(base.activeUsers, key) then
+        table.insert(base.activeUsers, key)
+        ns.log.debug("SyncBase: Active user registered: " .. tostring(key))
     end
 end
