@@ -53,26 +53,14 @@ end
 
 frame:SetScript("OnEvent", function(self, event, arg1, arg2)
     if event == "ADDON_LOADED" then
-        local initFrame = CreateFrame("Frame")
-
-        initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-
-        initFrame:SetScript("OnEvent", function()
-
-            ns.networking.SendToGuild("ADDON_STATUS", {
-                state = "ONLINE",
-                version = ns.globals.ADDONVERSION
-            })
-
-        end)
         self:UnregisterEvent("ADDON_LOADED")
         return
 
     elseif event == "PLAYER_LOGIN" then
         ns.option_defaults.initialize()
+        ns.networking.initialize()
         ns.globals.update()
         ns.helpers.scanPlayerProfessions()
-        ns.networking.initialize()
         ProfScanBurst()
         ns.ui.initialize()
         ns.components.minimapbutton.create()
