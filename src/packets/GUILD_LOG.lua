@@ -9,8 +9,8 @@ function GUILD_LOG.handle(sender, payload)
     if not ns.guildLog or not ns.guildLog.receive then return end
 
     ns.guildLog.receive({
-        message = payload.message,
-        sender  = payload.sender or sender,
-        time    = payload.time
+        time = payload.time,
+        sender = payload.sender or sender,
+        message = payload.message
     })
 end
