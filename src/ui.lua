@@ -171,20 +171,17 @@ function ui.updateFieldValue(name, field, value)
 end
 
 function ui.updateGuildLog()
-
-    if not ns.helpers.playerCanViewGuildLog() then
+    if not ns or not ns.db or not ns.db.guildLog then return end
+    if not ns.ui or not ns.ui.guildLogTable or not ns.ui.guildLogTable.setData then return end
+    if ns.helpers and ns.helpers.playerCanViewGuildLog and not ns.helpers.playerCanViewGuildLog() then
         return
     end
-
     local rows = {}
-
     for _, entry in ipairs(ns.db.guildLog or {}) do
-        table.insert(rows, {
+        rows[#rows+1] = {
             time = date("%d/%m %H:%M:%S", entry.time),
             message = entry.message
-        })
+        }
     end
-
     ns.ui.guildLogTable:setData(rows)
-
 end

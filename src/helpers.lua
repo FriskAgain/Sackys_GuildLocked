@@ -240,11 +240,18 @@ function helpers.scanPlayerProfessions()
 end
 
 function helpers.playerCanViewGuildLog()
+    if not ns or not ns.db then return false end
+    if not IsInGuild() then return false end
 
-    local rankIndex = ns.helpers.getGuildMemberRank(ns.globals.CHARACTERNAME)
+    local me = ns.globals and ns.globals.CHARACTERNAME
+    if not me then return false end
 
-    local requiredRank = ns.db.profile.logMinRank or 1
+    local rankIndex = ns.helpers.getGuildMemberRank(me)
+    if type(rankIndex) ~= "number" then return false end
 
-    return rankIndex and rankIndex <= requiredRank
+    local profile = ns.db.profile or {}
+    local requiredRank = profile.logMinRank
+    if type(requiredRank) ~= "number" then requiredRank = 1 end
 
+    return rankIndex <= requiredRank
 end
