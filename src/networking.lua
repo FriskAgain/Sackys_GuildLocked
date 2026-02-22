@@ -247,28 +247,25 @@ function networking.initialize()
 
         local me = ns.helpers.getKey(ns.globals and ns.globals.CHARACTERNAME)
         local onlineSet = networking.onlineSet or {}
-        
+
         for key, _ in pairs(onlineSet) do
             if key ~= me then
                 local u = networking.activeUsers and networking.activeUsers[key]
                 local lastSeen = u and u.lastSeen or (ns.db.addonStatus[key] and ns.db.addonStatus[key].lastSeen) or 0
 
-                if lastSeen == 0 or (now - lastSeen) > GRACE then
-                    -- online in guild, but no heartbear recently => addon not running
-                    ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
-                    local s = ns.db.addonStatus[key]
+                ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
+                local s = ns.db.addonStatus[key]
 
+                local wasEnabled = (s.enabled == true) or (s.seen == true)
+                if wasEnabled and (lastSeen == 0 or (now - lastSeen) > GRACE) then
                     if s.enabled ~= false then
                         s.enabled = false
-
-                        --
                         if not s._missingLogged then
                             s._missingLogged = true
                             if ns.guildLog and ns.guildLog.send then
-                                ns.guildLog.send(ns.helpers.getShort(key) .. " is online without SGLK enabled", { broadcast = true })
+                                ns.guildLog.send((ns.helpers.getShort(key) or key) .. " is online without SGLK enabled", { broadcast = true })
                             end
                         end
-
                         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
                     end
                 end
@@ -336,9 +333,11 @@ function networking.SendWhisper(type, payload, target)
 end
 
 function networking._SendMessage(type, payload, distribution, target)
-    -- Sicherstellen, dass initialize() ausgeführt wurde
     if not networking.Serializer or not networking.CompressLib or not networking.EncodeTable or not networking.CommHandler then
-        ns.log.error("Networking is not initialized.")
+        if not networking._initWarned then
+            networking._initWarned = true
+            ns.log.error("Networking is not initialized.")
+        end
         return
     end
 

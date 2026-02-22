@@ -62,8 +62,11 @@ function ADDON_STATUS.handle(sender, payload)
             prof2 = safeVal(prof2, "-"),
             prof2Skill = safeVal(prof2Skill, "-"),
         }
-        s.enabled = true
-        s._missingLogged = nil
+        ns.db.addonStatus[key].version = version
+        ns.db.addonStatus[key].lastSeen = now
+        ns.db.addonStatus[key].seen = true
+        ns.db.addonStatus[key].enabled = true
+        ns.db.addonStatus[key]._missingLogged = nil
 
         if not wasActive and ns.guildLog and ns.guildLog.send then
             ns.guildLog.send(short .. " enabled the addon (v" .. version .. ")", { broadcast = true })
@@ -78,10 +81,6 @@ function ADDON_STATUS.handle(sender, payload)
         ns.networking.activeUsers[key].version = version
         ns.networking.activeUsers[key].active = false
         ns.networking.activeUsers[key].lastSeen = now
-
-        if wasActive and ns.guildLog and ns.guildLog.send then
-            ns.guildLog.send(short .. " disabled the addon", { broadcast = true })
-        end
 
         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
         return

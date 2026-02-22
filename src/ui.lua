@@ -220,18 +220,18 @@ function ui.updateMemberList(showOnlineOnly)
         end
         member.version = v
 
-        local everSeen = false
-        if saved then
-            if saved.seen == true then
-                everSeen = true
-            elseif saved.version and saved.version ~= "" and saved.version ~= "-" then
-                everSeen = true
-            end
-        end
+        -- Addon Active:
+        -- Yes if we have a live heartbeat,
+        -- else Yes if DB says enabled=true,
+        -- else No.
+        local enabled = false
         if live and live.active == true then
-            everSeen = true
+            enabled = true
+        elseif saved and saved.enabled == true then
+            enabled = true
         end
-        member.addon_active = everSeen
+        member.addon_active = enabled
+
         member.name = short
     end
     return data
