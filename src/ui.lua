@@ -191,6 +191,11 @@ function ui.toggleGuildLog()
     end
 
     if ui.guildLogFrame.frame:IsShown() then
+        if InCombatLockdown and InCombatLockdown() then
+            ui._closeGuildLogAfterCombat = true
+            if ns.log and ns.log.info then ns.log.info("Will close Officer Log after combat.") end
+            return
+        end
         ui.guildLogFrame.frame:Hide()
     else
         ui.guildLogFrame.frame:Show()
@@ -250,23 +255,26 @@ end
 
 function ui.updateGuildLog()
     if not ns or not ns.db or not ns.db.guildLog then return end
-    if not ui.guildLogTable then return end
-
+    if not ui or not ui.guildLogTable or not ui.guildLogTable.setData then return end
     if ns.helpers and ns.helpers.playerCanViewGuildLog and not ns.helpers.playerCanViewGuildLog() then
         return
     end
 
-    local rows = {}
-    for _, entry in ipairs(ns.db.guildLog or {}) do
-        rows[#rows+1] = {
-            ts = entry.time or 0,
-            time = date("%d/%m %H:%M:%S", entry.time or time()),
-            message = entry.message or ""
-        }
-    end
+    -- Debounce refresh
+    if ui._guildLogUpdatePending then return end
+    ui._guildLogUpdatePending = true
 
-    ui.guildLogTable.data = rows
-    if ui.guildLogTable.refresh then
-        ui.guildLogTable:refresh()
-    end
+    C_Timer.After(0.35, function()
+        ui._guildLogUpdatePending = false
+
+        local rows = {}
+        for _, entry in ipairs(ns.db.guildLog or {}) do
+            rows[#rows+1] = {
+                time = date("%d/%m %H:%M:%S", entry.time or time()),
+                message = entry.message or ""
+            }
+        end
+
+        ui.guildLogTable:setData(rows)
+    end)
 end

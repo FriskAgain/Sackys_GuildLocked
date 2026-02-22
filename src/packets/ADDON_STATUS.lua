@@ -9,76 +9,84 @@ local function safeVal(v, fallback)
     return v
 end
 
+local function nowSec()
+    return GetTime()
+end
+
 function ADDON_STATUS.handle(sender, payload)
-    if ns.options and ns.options.debug then
-        ns.log.info("ADDON_STATUS.handle fired from: " .. tostring(sender) .. " state=" .. tostring(payload and payload.state))
-    end
     if not payload or not payload.state then return end
     if not ns.db then return end
 
     local key = ns.helpers.getKey(sender)
     if not key then return end
 
-    ns.db.chars = ns.db.chars or {}
     ns.db.addonStatus = ns.db.addonStatus or {}
     ns.networking.activeUsers = ns.networking.activeUsers or {}
 
     local short   = ns.helpers.getShort(sender) or key
     local state   = payload.state
     local version = safeVal(payload.version, "?")
-    local now     = GetTime()
+    local now     = nowSec()
 
-    local prof1      = safeVal(payload.prof1, nil)
-    local prof1Skill = safeVal(payload.prof1Skill, nil)
-    local prof2      = safeVal(payload.prof2, nil)
-    local prof2Skill = safeVal(payload.prof2Skill, nil)
+    local s = ns.db.addonStatus[key] or {}
+    local wasSeen       = (s.seen == true)
+    local wasEnabled    = (s.enabled == true)
+    local wasDisabled   = (s.enabled == false)
 
-    ns.db.chars[key] = ns.db.chars[key] or {}
-    ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
-    local s = ns.db.addonStatus[key]
-
-    local wasSeen = (s.seen == true)
-    local wasEnabled = (s.enabled ~= false)
-
-    if prof1 ~= nil then ns.db.chars[key].prof1 = prof1 end
-    if prof1Skill ~= nil then ns.db.chars[key].prof1Skill = prof1Skill end
-    if prof2 ~= nil then ns.db.chars[key].prof2 = prof2 end
-    if prof2Skill ~= nil then ns.db.chars[key].prof2Skill = prof2Skill end
-
+    s.seen = true
     s.version = version
     s.lastSeen = now
-    s.seen = true
-    if prof1 ~= nil then s.prof1 = prof1 end
-    if prof1Skill ~= nil then s.prof1Skill = prof1Skill end
-    if prof2 ~= nil then s.prof2 = prof2 end
-    if prof2Skill ~= nil then s.prof2Skill = prof2Skill end
+
+    if payload.prof1 ~= nil then s.prof1 = payload.prof1 end
+    if payload.prof1Skill ~= nil then s.prof1Skill = payload.prof1Skill end
+    if payload.prof2 ~= nil then s.prof2 = payload.prof2 end
+    if payload.prof2Skill ~= nil then s.prof2Skill = payload.prof2Skill end
+
+    local function isReloadRejoin()
+        return s._lastOfflineAt and (now - s._lastOfflineAt) <= 10
+    end
 
     if state == "ONLINE" then
+        -- ONLINE implies enabled
         s.enabled = true
         s._missingLogged = nil
 
-        ns.networking.activeUsers[key] = {
-            version = version,
-            active = true,
-            lastSeen = now,
-            prof1 = safeVal(prof1, "-"),
-            prof1Skill = safeVal(prof1Skill, "-"),
-            prof2 = safeVal(prof2, "-"),
-            prof2Skill = safeVal(prof2Skill, "-"),
-        }
+        ns.networking.activeUsers[key] = ns.networking.activeUsers[key] or {}
+        ns.networking.activeUsers[key].active = true
+        ns.networking.activeUsers[key].version = version
+        ns.networking.activeUsers[key].lastSeen = now
 
-        if wasSeen and (wasEnabled == false) and ns.guildLog and ns.guildLog.send then
-            ns.guildLog.send(short .. " enabled the addon (v" .. version .. ")", { broadcast = true })
+        if wasSeen and wasDisabled and not isReloadJoin() then
+            if ns.guildLog and ns.guildLog.send then
+                ns.guildLog.send(short .. " enabled the addon (v" .. version .. ")", { broadcast = true })
+            end
         end
+
+        s._lastOfflineAt = nil
+        ns.db.addonStatus[key] = s
 
         if ns.ui and ns.ui.refresh then ns.ui.refresh() end
         return
     end
 
     if state == "OFFLINE" then
+        -- OFFLINE implies disabled (Suppress logging if it's likely /reload)
+        s._lastOfflineAt = now
+        s.enabled = false
+
         ns.networking.activeUsers[key] = ns.networking.activeUsers[key] or {}
         ns.networking.activeUsers[key].active = false
+        ns.networking.activeUsers[key].version = version
         ns.networking.activeUsers[key].lastSeen = now
+
+        if wasEnabled and not isReloadRejoin() then
+            if ns.guildLog and ns.guildLog.send then
+                ns.guildLog.send(short .. " disabled the addon", { broadcast = true })
+            end
+        end
+
+        ns.db.addonStatus[key] = s
+        if ns.ui and ns.ui.refresh then ns.ui.refresh() end
         return
     end
 end

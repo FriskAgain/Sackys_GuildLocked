@@ -69,7 +69,7 @@ function networking.initialize()
             networking.activeUsers[name] = networking.activeUsers[name] or {}
 
             networking.activeUsers[name].version = data.version
-            networking.activeUsers[name].enabled = (data.enabled == true) or (data.seen == true and data.enable ~= false)
+            networking.activeUsers[name].enabled = (data.enabled == true) or (data.seen == true and data.enabled ~= false)
             networking.activeUsers[name].active = false
             networking.activeUsers[name].lastSeen = tonumber(data.lastSeen) or now
 
@@ -239,34 +239,43 @@ function networking.initialize()
     -- 7. Detect "online but no addon heartbeat"
     -------------------------------------------------
     C_Timer.NewTicker(15, function()
+        if not IsInGuild() then return end
         if not ns.db then return end
-        ns.db.addonStatus = ns.db.addonStatus or {}
 
-        local now = GetTime()
-        local GRACE = 20 -- Seconds (Give time after login/reload)
+        ns.db.addonStatus = ns.db.addonStatus or {}
+        networking.activeUsers = networking.activeUsers or {}
+
+        -- Guild Roster Ready?
+        local n = GetNumGuildMembers()
+        if not n or n <= 0 then return end
+
+        local onlineSet = networking.onlineSet
+        if not onlineSet then return end
 
         local me = ns.helpers.getKey(ns.globals and ns.globals.CHARACTERNAME)
-        local onlineSet = networking.onlineSet or {}
+        if not me then return end
+        local now = GetTime()
+        local GRACE = 45 -- Must be > heartbeat (30s)
 
-        for key, _ in pairs(onlineSet) do
+        for key,_ in pairs (onlineSet) do
             if key ~= me then
-                local u = networking.activeUsers and networking.activeUsers[key]
-                local lastSeen = u and u.lastSeen or (ns.db.addonStatus[key] and ns.db.addonStatus[key].lastSeen) or 0
+                local s = ns.db.addonStatus[key] or {}
+                local u = networking.activeUsers[key]
+                local lastSeen = (u and u.lastSeen) or s.lastSeen or 0
 
-                ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
-                local s = ns.db.addonStatus[key]
-
-                local wasEnabled = (s.enabled == true) or (s.seen == true)
-                if wasEnabled and (lastSeen == 0 or (now - lastSeen) > GRACE) then
-                    if s.enabled ~= false then
-                        s.enabled = false
+                if s.seen == true then
+                    if lastSeen == 0 or (now - lastSeen) > GRACE then
+                        if s.enabled ~= false then
+                            s.enabled = false
+                        end
                         if not s._missingLogged then
                             s._missingLogged = true
                             if ns.guildLog and ns.guildLog.send then
-                                ns.guildLog.send((ns.helpers.getShort(key) or key) .. " is online without SGLK enabled", { broadcast = true })
+                                ns.guildLog.send((ns.helpers.getShort(key) or key) .. " is online without SGLK enabled")
                             end
                         end
-                        if ns.ui and ns.ui.refresh then ns.ui.refresh() end
+
+                        ns.db.addonStatus[key] = s
                     end
                 end
             end

@@ -6,6 +6,7 @@ local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_LOGOUT")
+frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 frame:RegisterEvent("AUCTION_HOUSE_SHOW")
 frame:RegisterEvent("TRADE_SHOW")
 frame:RegisterEvent("TRADE_ACCEPT_UPDATE")
@@ -58,8 +59,8 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
 
     elseif event == "PLAYER_LOGIN" then
         ns.option_defaults.initialize()
-        ns.networking.initialize()
         ns.globals.update()
+        ns.networking.initialize()
         ns.helpers.scanPlayerProfessions()
         ProfScanBurst()
         ns.ui.initialize()
@@ -77,6 +78,13 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 state = "OFFLINE",
                 version = ns.globals and ns.globals.ADDONVERSION or "?"
             })
+        end
+        return
+    
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        if ns.ui and ns.ui._closeGuildLogAfterCombat and ns.ui.guildLogFrame and ns.ui.guildLogFrame.frame then
+            ns.ui._closeGuildLogAfterCombat = false
+            ns.ui.guildLogFrame.frame:Hide()
         end
         return
 
@@ -98,10 +106,6 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 ns.restrictions.sendmail.initialize()
                 ns.sync.base.initialize()
                 ns.sync.mailexception.initialize()
-                ns.networking.SendToGuild("ADDON_STATUS", {
-                    state = "ONLINE",
-                    version = ns.globals.ADDONVERSION
-                })
                 C_Timer.After(1.0, DelayedProfScan)
                 SafeUIRefresh()
             end
@@ -180,7 +184,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
 
     elseif event == "PLAYER_DEAD" then
         local tx = {
-            u = Ambiguate(ns.globals.CHARACTERNAME, "none"),
+            u = ns.helpers.getKey(ns.globals.CHARACTERNAME),
             t = time(),
             d = 0
         }
