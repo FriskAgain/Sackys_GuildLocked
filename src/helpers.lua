@@ -249,9 +249,8 @@ function helpers.playerCanViewGuildLog()
     local rankIndex = ns.helpers.getGuildMemberRank(me)
     if type(rankIndex) ~= "number" then return false end
 
-    local profile = ns.db.profile or {}
-    local requiredRank = profile.logMinRank
-    if type(requiredRank) ~= "number" then requiredRank = 1 end
+    local requiredRank = (ns.db.profile and ns.db.profile.logMinRank)
+    if type(requiredRank) ~= "number" then requiredRank = 2 end
 
     return rankIndex <= requiredRank
 end

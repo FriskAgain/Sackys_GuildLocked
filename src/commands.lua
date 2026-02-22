@@ -131,6 +131,12 @@ end
 
 SLASH_SGLK1 = PRIMARY_CMD
 SLASH_SGLK2 = ALT_CMD
+SLASH_SGLKLOG1 = "/sglklog"
+SlashCmdList.SGLKLOG = function()
+    if ns.ui and ns.ui.toggleGuildLog then
+        ns.ui.toggleGuildLog()
+    end
+end
 SlashCmdList["SGLK"] = function(msg)
     commands.SlashHandler(msg or "")
 end

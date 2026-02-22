@@ -14,8 +14,29 @@ function ui.initialize()
 
     ui.frame.frame:Hide()
 
+    -- Officer Log Button
+    local function canSeeLog()
+        return (ns.helpers and ns.helpers.playerCanViewGuildLog and ns.helpers.playerCanViewGuildLog()) or false
+    end
+
+    local logBtn = CreateFrame("Button", nil, ui.frame.frame, "UIPanelButtonTemplate")
+    logBtn:SetSize(100, 22)
+    logBtn:SetPoint("TOPRIGHT", ui.frame.frame, "TOPRIGHT", -12, -6)
+    logBtn:SetText("Officer Log")
+
+    logBtn:SetScript("OnClick", function()
+        if ns.ui and ns.ui.toggleGuildLog then
+            ns.ui.toggleGuildLog()
+        end
+    end)
+    -- Hide if no permissions
+    if not canSeeLog() then
+        logBtn:Hide()
+    end
+    ui._officerLogBtn = logBtn
+
     local memberlist = CreateFrame("Frame", nil, ui.frame.frame)
-    memberlist:SetPoint("TOPLEFT", ui.frame.frame, "TOPLEFT", 10, -30)
+    memberlist:SetPoint("TOPLEFT", ui.frame.frame, "TOPLEFT", 10, -40)
     memberlist:SetPoint("BOTTOMRIGHT", ui.frame.frame, "BOTTOMRIGHT", -10, 10)
 
     local metadata = {
@@ -118,6 +139,63 @@ function ui.refresh()
 
     end
 
+    if ui._officerLogBtn and ns.helpers and ns.helpers.playerCanViewGuildLog then
+        if ns.helpers.playerCanViewGuildLog() then ui._officerLogBtn:Show() else ui._officerLogBtn:Hide() end
+    end
+
+end
+
+function ui.ensureGuildLogUI()
+    if ui.guildLogFrame then return end
+    -- Permission gate
+    if ns.helpers and ns.helpers.playerCanViewGuildLog and not ns.helpers.playerCanViewGuildLog() then
+        return
+    end
+
+    ui.guildLogFrame = ns.components.windowframe:Create(650, 420):Title("SGLK Officer Log"):Draggable()
+    ui.guildLogFrame.frame:Hide()
+
+    local holder = CreateFrame("Frame", nil, ui.guildLogFrame.frame)
+    holder:SetPoint("TOPLEFT", ui.guildLogFrame.frame, "TOPLEFT", 10, -30)
+    holder:SetPoint("BOTTOMRIGHT", ui.guildLogFrame.frame, "BOTTOMRIGHT", -10, 10)
+
+    local meta = {
+        col1 = { header = "Time", field = "time" },
+        col2 = { header = "Message", field = "message" },
+        sort = {
+            col1 = { field = "ts", order = "desc" }
+        }
+    }
+
+    ui.guildLogTable = ns.components.tablev2:new(holder, meta, {}, 18)
+
+    local clearBtn = CreateFrame("Button", nil, ui.guildLogFrame.frame, "UIPanelButtonTemplate")
+    clearBtn:SetSize(90, 22)
+    clearBtn:SetPoint("TOPRIGHT", ui.guildLogFrame.frame, "TOPRIGHT", -12, -6)
+    clearBtn:SetText("Clear")
+    clearBtn:SetScript("OnClick", function()
+        if not ns.db then return end
+        ns.db.guildLog = ns.db.guildLog or {}
+        wipe(ns.db.guildLog)
+        if ui.updateGuildLog then ui.updateGuildLog() end
+    end)
+end
+
+function ui.toggleGuildLog()
+    ui.ensureGuildLogUI()
+    if not ui.guildLogFrame then
+        if ns.log and ns.log.error then
+            ns.log.error("No permission to view guild log.")
+        end
+        return
+    end
+
+    if ui.guildLogFrame.frame:IsShown() then
+        ui.guildLogFrame.frame:Hide()
+    else
+        ui.guildLogFrame.frame:Show()
+        if ui.updateGuildLog then ui.updateGuildLog() end
+    end
 end
 
 
@@ -172,16 +250,23 @@ end
 
 function ui.updateGuildLog()
     if not ns or not ns.db or not ns.db.guildLog then return end
-    if not ns.ui or not ns.ui.guildLogTable or not ns.ui.guildLogTable.setData then return end
+    if not ui.guildLogTable then return end
+
     if ns.helpers and ns.helpers.playerCanViewGuildLog and not ns.helpers.playerCanViewGuildLog() then
         return
     end
+
     local rows = {}
     for _, entry in ipairs(ns.db.guildLog or {}) do
         rows[#rows+1] = {
-            time = date("%d/%m %H:%M:%S", entry.time),
-            message = entry.message
+            ts = entry.time or 0,
+            time = date("%d/%m %H:%M:%S", entry.time or time()),
+            message = entry.message or ""
         }
     end
-    ns.ui.guildLogTable:setData(rows)
+
+    ui.guildLogTable.data = rows
+    if ui.guildLogTable.refresh then
+        ui.guildLogTable:refresh()
+    end
 end

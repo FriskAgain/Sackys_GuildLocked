@@ -7,7 +7,6 @@ function option_defaults.initialize()
     if type(SGLKOptions) ~= "table" then
         SGLKOptions = {}
     end
-
     ns.options = SGLKOptions
 
     if type(ns.options.debug) ~= "boolean" then
@@ -19,18 +18,25 @@ function option_defaults.initialize()
     end
 
     if type(SGLKDB) ~= "table" then
-    SGLKDB = {}
+        SGLKDB = {}
     end
-
     if type(SGLKDB.chars) ~= "table" then
-    SGLKDB.chars = {}
+        SGLKDB.chars = {}
     end
-
     if type(SGLKDB.addonStatus) ~= "table" then
-    SGLKDB.addonStatus = {}
+        SGLKDB.addonStatus = {}
+    end
+    if type(SGLKDB.guildLog) ~= "table" then
+        SGLKDB.guildLog = {}
+    end
+    if type(SGLKDB.profile) ~= "table" then
+        SGLKDB.profile = {}
     end
 
     ns.db = SGLKDB
 
-
+    -- Officer visibility setting (0=GM, 1=Officer, 2=2.Officer)
+    if type(ns.db.profile.logMinRank) ~= "number" then
+        ns.db.profile.logMinRank = 2
+    end
 end
