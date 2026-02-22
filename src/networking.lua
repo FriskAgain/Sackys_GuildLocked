@@ -243,7 +243,7 @@ function networking.initialize()
         ns.db.addonStatus = ns.db.addonStatus or {}
 
         local now = GetTime()
-        local GRACE = 45 -- Seconds (Give time after login/reload)
+        local GRACE = 20 -- Seconds (Give time after login/reload)
 
         local me = ns.helpers.getKey(ns.globals and ns.globals.CHARACTERNAME)
         local onlineSet = networking.onlineSet or {}
