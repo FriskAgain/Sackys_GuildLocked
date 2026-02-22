@@ -83,6 +83,21 @@ function helpers.getGuildMemberRank(name)
     return nil
 end
 
+function helpers.getGuildRosterOnlineSet()
+    local online = {}
+    if not IsInGuild() then return online end
+
+    local n = GetNumGuildMembers()
+    for i = 1, n do
+        local name, _, _, _, _, _, _, _, isOnline = GetGuildRosterInfo(i)
+        if name and isOnline then
+            local key = helpers.getKey(name)
+            if key then online[key] = true end
+        end
+    end
+    return online
+end
+
 local AceSerializer = LibStub("AceSerializer-3.0")
 local key = 42
 

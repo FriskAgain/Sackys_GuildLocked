@@ -211,6 +211,44 @@ function networking.initialize()
             prof2Skill = prof.prof2Skill
         })
     end)
+
+    -------------------------------------------------
+    -- 7. Detect "online but no addon heartbeat"
+    -------------------------------------------------
+    C_Timer.NewTicker(15, function()
+        if not ns.db then return end
+        ns.db.addonStatus = ns.db.addonStatus or {}
+
+        local now = GetTime()
+        local GRACE = 45 -- Seconds (Give time after login/reload)
+
+        for key, _ in pairs(onlineSet) do
+            if key ~= me then
+                local u = networking.activeUsers and networking.activeUsers[key]
+                local lastSeen = u and u.lastSeen or (ns.db.addonStatus[key] and ns.db.addonStatus[key].lastSeen) or 0
+
+                if lastSeen == 0 or (now - lastSeen) > GRACE then
+                    -- online in guild, but no heartbear recently => addon not running
+                    ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
+                    local s = ns.db.addonStatus[key]
+
+                    if s.enabled ~= false then
+                        s.enabled = false
+
+                        --
+                        if not s._missingLogged then
+                            s._missingLogged = true
+                            if ns.guildLog and ns.guildLog.send then
+                                ns.guildLog.send(ns.helpers.getShort(key) .. " is online without SGLK enabled", { broadcast = true })
+                            end
+                        end
+
+                        if ns.ui and ns.ui.refresh then ns.ui.refresh() end
+                    end
+                end
+            end
+        end
+    end)
 end
 
 function networking.ReceivedMessage(msg, distribution, sender)
