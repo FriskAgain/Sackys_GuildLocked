@@ -2,8 +2,8 @@
 ## Title: Sackys GuildLocked
 ## Notes: GuildLocked channel for SackyBoi
 ## Author: Fria & YozoraCho
-## Version: 1.0.2
-## MinVersion: 1.0.0
+## Version: 1.0.4
+## MinVersion: 1.0.2
 ## SavedVariables: SGLKOptions, SGLKMailExceptions, SGLKDB
 
 ## Include all Lua files via embeds.xml

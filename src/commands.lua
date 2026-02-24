@@ -131,11 +131,14 @@ end
 
 SLASH_SGLK1 = PRIMARY_CMD
 SLASH_SGLK2 = ALT_CMD
-SLASH_SGLKLOG1 = "/sglklog"
-SlashCmdList.SGLKLOG = function()
-    if ns.ui and ns.ui.toggleGuildLog then
-        ns.ui.toggleGuildLog()
+SLASH_SGLKVER1 = "/sglkver"
+SlashCmdList["SGLKVER"] = function()
+    if not IsInGuild() then
+        print("Not in guild")
+        return
     end
+    print("Requesting versions...")
+    SGLK_NS.networking.SendToGuild("REQ_VERSION", {})
 end
 SlashCmdList["SGLK"] = function(msg)
     commands.SlashHandler(msg or "")

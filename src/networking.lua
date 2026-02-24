@@ -1,5 +1,5 @@
 local addonName, ns = ...
-local MAX_SAFE_MSG = 240
+local MAX_SAFE_MSG = 3500
 local networking = {
     PREFIX = "SGLK02"
 }
@@ -334,9 +334,14 @@ function networking.ReceivedMessage(msg, distribution, sender)
         if me and not sender:find("-",1,true) and Ambiguate(sender,"none") == Ambiguate(me,"none") then return end
     end
 
-    if distribution == "WHISPER" and not ns.helpers.isGuildMember(sender) then
-        ns.log.debug("Ignored whisper from non-guild member: " .. tostring(sender))
-        return
+    if distribution == "WHISPER" then
+        local sShort = Ambiguate(sender, "none")
+        local sKey = (ns.helpers.getKey and ns.helpers.getKey and ns.helpers.getKey(sShort)) or sShort
+
+        if distribution == "WHISPER" and not (ns.helpers.isGuildMember(sShort) or ns.helpers.isGuildMember(sKey)) then
+            ns.log.debug("Ignored whisper from non-guild membert: " .. tostring(sender))
+            return
+        end
     end
 
     -- Decode
@@ -363,7 +368,10 @@ function networking.ReceivedMessage(msg, distribution, sender)
     local packet = ns.packets[data.type]
     ns.log.debug("Networking: Received: " .. data.type .. " | Distribution: " .. distribution .. " | Sender: " .. sender)
     if packet and packet.handle then
-        packet.handle(sender, data.payload)
+        local ok, err3 = pcall(packet.handle, sender, data.payload)
+        if not ok then
+            ns.log.error("Packet "..tostring(data.type).." failed: "..tostring(err3))
+        end
     else
         ns.log.error("Unhandled packet type: " .. data.type)
     end
@@ -384,7 +392,7 @@ function networking.SendWhisper(type, payload, target)
     networking._SendMessage(type, payload, "WHISPER", target)
 end
 
-function networking._SendMessage(type, payload, distribution, target)
+function networking._SendMessage(packetType, payload, distribution, target)
     if not networking.Serializer or not networking.CompressLib or not networking.EncodeTable or not networking.CommHandler then
         if not networking._initWarned then
             networking._initWarned = true
@@ -393,8 +401,7 @@ function networking._SendMessage(type, payload, distribution, target)
         return
     end
 
-    -- Serialize
-    local serialized = networking.Serializer:Serialize({ type = type, payload = payload})
+    local serialized = networking.Serializer:Serialize({ type = packetType, payload = payload})
     if not serialized then
         ns.log.error("Serialization failed")
         return
@@ -417,14 +424,17 @@ function networking._SendMessage(type, payload, distribution, target)
     -- Size Guard
     local size = #encoded
     if size > MAX_SAFE_MSG then
-        ns.log.warn("Packet too large ("..size.." bytes) — blocked: "..tostring(type))
+        local msg = "Packet too large ("..size.." bytes) - blocked:"..tostring(packetType)
+        if ns.log and ns.log.warn then
+            ns.log.warn(msg)
+        elseif ns.log.error then
+            ns.log.error(msg)
+        end
         return
     end
 
-    if distribution == "WHISPER" then
-        ns.log.debug("Sending "..type.." to "..tostring(target).." ("..size.."b)")
-    else
-        ns.log.debug("Sending "..type.." to "..distribution.." ("..size.."b)")
+    if distribution == "WHISPER" and type(target) == "string" then
+        target = Ambiguate(target, "none")
     end
     networking.CommHandler:SendCommMessage(networking.PREFIX, encoded, distribution, target, "NORMAL")
 end

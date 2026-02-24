@@ -19,6 +19,7 @@
     <Script file="src/packets/REQ_MAIL_EXCEPTIONS.lua" />
     <Script file="src/packets/REQ_USERS.lua" />
     <Script file="src/packets/REQ_VERSION.lua" />
+    <Script file="src/packets/REQ_PROF.lua" />
     <Script file="src/packets/RSP_MAIL_EXCEPTIONS.lua" />
     <Script file="src/packets/RSP_USERS.lua" />
     <Script file="src/packets/RSP_VERSION.lua" />

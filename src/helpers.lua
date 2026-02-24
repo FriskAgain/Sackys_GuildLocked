@@ -1,6 +1,30 @@
 local addonName, ns = ...
 local helpers = {}
 ns.helpers = helpers
+local PROF_SPELLIDS = {
+    Blacksmithing   = 2018,
+    Leatherworking  = 2108,
+    Alchemy         = 2259,
+    Herbalism       = 2366,
+    Mining          = 2575,
+    Tailoring       = 3908,
+    Engineering     = 4036,
+    Enchanting      = 7411,
+    Skinning        = 8613,
+    Jewelcrafting   = 25229,
+}
+
+local function buildPrimaryNames()
+    local map = {}
+    for en, id in pairs(PROF_SPELLIDS) do
+        local localized = GetSpellInfo(id)
+        if localized and localized ~= "" then
+            map[localized] = { en = en, id = id }
+        end
+        map[en] = { en = en, id = id }
+    end
+    return map
+end
 
 function helpers.getKey(name)
     if not name or name == "" then return nil end
@@ -130,33 +154,20 @@ end
 
 function helpers.getPlayerProfessionsClassic()
     local profs = {}
+    local PRIMARY = buildPrimaryNames()
 
-    -- whitelist based on skillName
-    local PRIMARY_NAMES = {
-        ["Blacksmithing"] = true,
-        ["Leatherworking"] = true,
-        ["Alchemy"] = true,
-        ["Herbalism"] = true,
-        ["Mining"] = true,
-        ["Tailoring"] = true,
-        ["Engineering"] = true,
-        ["Enchanting"] = true,
-        ["Skinning"] = true,
-        ["Jewelcrafting"] = true,
-    }
-
-    local num = GetNumSkillLines()
+    local num = GetNumSkillLines and GetNumSkillLines() or 0
     for i = 1, num do
-        local skillName, isHeader, _, skillRank =
-            GetSkillLineInfo(i)
-
-        if not isHeader
-        and skillName
-        and PRIMARY_NAMES[skillName] then
-            table.insert(profs, {
-                name = skillName,
-                rank = skillRank or 0
-            })
+        local skillName, isHeader, _, skillRank = GetSkillLineInfo(i)
+        if not isHeader and skillName then
+            local info = PRIMARY[skillName]
+            if info then
+                table.insert(profs, {
+                    name = info.en,
+                    id   = info.id,
+                    rank = skillRank or 0
+                })
+            end
         end
     end
     return profs
@@ -166,20 +177,21 @@ end
 function helpers.getPlayerProfessionColumns()
     local profList = helpers.getPlayerProfessionsClassic()
     local result = {
-        prof1 = "-",
-        prof1Skill = "-",
-        prof2 = "-",
-        prof2Skill = "-"
+        prof1Id = nil, prof1 = "-", prof1Skill = "-",
+        prof2Id = nil, prof2 = "-", prof2Skill = "-"
     }
 
     if profList[1] then
+        result.prof1Id = profList[1].id
         result.prof1 = profList[1].name
         result.prof1Skill = profList[1].rank
     end
     if profList[2] then
+        result.prof2Id = profList[2].id
         result.prof2 = profList[2].name
         result.prof2Skill = profList[2].rank
     end
+
     return result
 end
 
@@ -187,22 +199,10 @@ function helpers.professionsReady()
     local n = GetNumSkillLines and GetNumSkillLines() or 0
     if not n or n <= 0 then return false end
 
-    local PRIMARY_NAMES = {
-        ["Blacksmithing"] = true,
-        ["Leatherworking"] = true,
-        ["Alchemy"] = true,
-        ["Herbalism"] = true,
-        ["Mining"] = true,
-        ["Tailoring"] = true,
-        ["Engineering"] = true,
-        ["Enchanting"] = true,
-        ["Skinning"] = true,
-        ["Jewelcrafting"] = true,
-    }
-
+    local PRIMARY = buildPrimaryNames()
     for i = 1, n do
         local skillName, isHeader = GetSkillLineInfo(i)
-        if not isHeader and skillName and PRIMARY_NAMES[skillName] then
+        if not isHeader and skillName and PRIMARY[skillName] then
             return true
         end
     end
