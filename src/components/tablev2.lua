@@ -69,6 +69,11 @@ function tablev2:refresh()
     self:updateRows()
 end
 
+function tablev2:setData(newData)
+    self.data = newData or {}
+    self:refresh()
+end
+
 
 function tablev2:calculateFieldWidths()
     if not self.fields or #self.fields == 0 then return end

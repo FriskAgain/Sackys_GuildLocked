@@ -1,6 +1,30 @@
 local addonName, ns = ...
 local ui = {}
 ns.ui = ui
+ui._profReqLast = ui._profReqLast or {}
+ui._profReqCooldown = 60 -- seconds per player
+
+local function whisperTarget(keyOrName)
+    if ns.helpers and ns.helpers.getShort then
+        return ns.helpers.getShort(keyOrName)
+    end
+    if type(keyOrName) == "string" then
+        return keyOrName:match("^([^%-]+)") or keyOrName
+    end
+    return keyOrName
+end
+
+local function shouldRequestProf(charData)
+    if not charData then return true end
+
+    local p1 = charData.prof1
+    local p2 = charData.prof2
+
+    local missing1 = (p1 == nil or p1 == "" or p1 == "-")
+    local missing2 = (p2 == nil or p2 == "" or p2 == "-")
+
+    return missing1 or missing2
+end
 
 function ui.initialize()
 
@@ -98,7 +122,6 @@ function ui.initialize()
 
 end
 
-
 function ui.toggleWindow()
     if ui.frame.frame:IsShown() then
         ui.frame.frame:Hide()
@@ -161,10 +184,9 @@ function ui.ensureGuildLogUI()
 
     local meta = {
         col1 = { header = "Time", field = "time" },
-        col2 = { header = "Message", field = "message" },
-        sort = {
-            col1 = { field = "ts", order = "desc" }
-        }
+        col2 = { header = "Sender", field = "sender" },
+        col3 = { header = "Message", field = "message" },
+        sort = { col1 = { field = "ts", order = "desc" } }
     }
 
     ui.guildLogTable = ns.components.tablev2:new(holder, meta, {}, 18)
@@ -203,19 +225,20 @@ function ui.toggleGuildLog()
     end
 end
 
-
 function ui.updateMemberList(showOnlineOnly)
     local data = ns.helpers.getGuildMemberData(showOnlineOnly)
 
     ns.networking.activeUsers = ns.networking.activeUsers or {}
     if not ns.db then return data end
     ns.db.addonStatus = ns.db.addonStatus or {}
+    ns.db.chars = ns.db.chars or {}
+    local now = GetTime()
 
     for _, member in ipairs(data) do
-        local short = Ambiguate(member.name, "none")
-        local key = ns.helpers.getKey(member.name)
-        local live = key and ns.networking.activeUsers[key] or nil
+        local key = member.key
+        local live  = key and ns.networking.activeUsers[key] or nil
         local saved = key and ns.db.addonStatus[key] or nil
+        local charData = key and ns.db.chars[key] or nil
 
         local v = "-"
         if live and live.version and live.version ~= "" then
@@ -237,11 +260,29 @@ function ui.updateMemberList(showOnlineOnly)
         end
         member.addon_active = enabled
 
-        member.name = short
+        -- -----------------------------
+        -- Profession polling
+        -- -----------------------------
+        local online = (member.online == "Yes")
+
+        local hasAddon = saved and saved.seen == true and saved.enabled ~= false
+
+        if key and online and hasAddon and shouldRequestProf(charData) then
+            ui._profReqLast[key] = ui._profReqLast[key] or 0
+            if (now - ui._profReqLast[key]) >= (ui._profReqCooldown or 60) then
+                ui._profReqLast[key] = now
+
+                if ns.networking and ns.networking.SendWhisper then
+                    local target = whisperTarget(key)
+                    if target and target ~= "" then
+                        ns.networking.SendWhisper("REQ_PROF", {}, target)
+                    end
+                end
+            end
+        end
     end
     return data
 end
-
 
 function ui.updateFieldValue(name, field, value)
     if not name or not field then return end
@@ -255,7 +296,7 @@ end
 
 function ui.updateGuildLog()
     if not ns or not ns.db or not ns.db.guildLog then return end
-    if not ui or not ui.guildLogTable or not ui.guildLogTable.setData then return end
+    if not ui or not ui.guildLogTable then return end
     if ns.helpers and ns.helpers.playerCanViewGuildLog and not ns.helpers.playerCanViewGuildLog() then
         return
     end
@@ -269,12 +310,18 @@ function ui.updateGuildLog()
 
         local rows = {}
         for _, entry in ipairs(ns.db.guildLog or {}) do
+            local ts = entry.time or 0
             rows[#rows+1] = {
-                time = date("%d/%m %H:%M:%S", entry.time or time()),
+                ts = ts,
+                time = date("%d/%m %H:%M:%S", ts),
+                sender = entry.sender or "?",
                 message = entry.message or ""
             }
         end
 
-        ui.guildLogTable:setData(rows)
+        ui.guildLogTable.data = rows
+        if ui.guildLogTable.refresh then
+            ui.guildLogTable:refresh()
+        end
     end)
 end

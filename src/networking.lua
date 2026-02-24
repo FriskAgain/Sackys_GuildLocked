@@ -139,7 +139,6 @@ function networking.initialize()
             ns.db.addonStatus[key].lastSeen = now
             ns.db.addonStatus[key].seen = true
             ns.db.addonStatus[key].enabled = true
-
             ns.db.addonStatus[key].prof1 = prof.prof1
             ns.db.addonStatus[key].prof1Skill = prof.prof1Skill
             ns.db.addonStatus[key].prof2 = prof.prof2
@@ -154,6 +153,19 @@ function networking.initialize()
             prof2 = prof.prof2,
             prof2Skill = prof.prof2Skill
         })
+        if ns.guildLog and ns.guildLog.send and ns.db then
+            ns.db.profile = ns.db.profile or {}
+            local nowT = time()
+            local last = tonumber(ns.db.profile._lastEnableBroadcastAt or 0) or 0
+            local ENABLE_COOLDOWN = 60
+
+            if (nowT - last) >= ENABLE_COOLDOWN then
+                ns.db.profile._lastEnableBroadcastAt = nowT
+                local meKey = ns.helpers.getKey(ns.globals.CHARACTERNAME)
+                local short = (ns.helpers.getShort(meKey) or meKey or ns.globals.CHARACTERNAME)
+                ns.guildLog.send(short .. " enabled the addon (v" .. (ns.globals.ADDONVERSION or "?") .. ")", { broadcast = true })
+            end
+        end
     end)
 
     -------------------------------------------------
@@ -245,39 +257,70 @@ function networking.initialize()
         ns.db.addonStatus = ns.db.addonStatus or {}
         networking.activeUsers = networking.activeUsers or {}
 
-        -- Guild Roster Ready?
-        local n = GetNumGuildMembers()
-        if not n or n <= 0 then return end
-
         local onlineSet = networking.onlineSet
         if not onlineSet then return end
 
         local me = ns.helpers.getKey(ns.globals and ns.globals.CHARACTERNAME)
-        if not me then return end
         local now = GetTime()
-        local GRACE = 45 -- Must be > heartbeat (30s)
+        local HEARTBEAT = 30
+        local GRACE = 120 -- Must be > HEARTBEAT (30s) | Give room for lag + login + reload
+        local MISS_STRIKES = 2
 
         for key,_ in pairs (onlineSet) do
             if key ~= me then
-                local s = ns.db.addonStatus[key] or {}
-                local u = networking.activeUsers[key]
-                local lastSeen = (u and u.lastSeen) or s.lastSeen or 0
+                local s = ns.db.addonStatus[key]
+                if s and s.seen == true then
+                    if not s._onlineSince then
+                        s._onlineSince = now
+                        s._missStrikes = 0
+                        ns.db.addonStatus[key] = s
+                    else
+                        local u = networking.activeUsers[key]
+                        local lastSeen = (u and u.lastSeen) or s.lastSeen or 0
+                        local sessionAge = now - (s._onlineSince or now)
+                        local missing = (lastSeen == 0) or ((now - lastSeen) > GRACE)
 
-                if s.seen == true then
-                    if lastSeen == 0 or (now - lastSeen) > GRACE then
-                        if s.enabled ~= false then
-                            s.enabled = false
-                        end
-                        if not s._missingLogged then
-                            s._missingLogged = true
-                            if ns.guildLog and ns.guildLog.send then
-                                ns.guildLog.send((ns.helpers.getShort(key) or key) .. " is online without SGLK enabled")
+                        if sessionAge < GRACE then
+                            s._missStrikes = 0
+                        else
+                            if missing then
+                                s._missStrikes = (s._missStrikes or 0) +1
+                                if s._missStrikes >= MISS_STRIKES then
+                                    if not s._missing then
+                                        s._missing = true
+                                        s._missingSince = now
+                                        if s.enabled ~= false then
+                                            s.enabled = false
+                                        end
+                                        if ns.guildLog and ns.guildLog.send then
+                                            ns.guildLog.send((ns.helpers.getShort(key) or key) .. " is online without SGLK enabled", { broadcast = true })
+                                        end
+                                    end
+                                end
+                            else
+                                s._missStrikes = 0
+                                if s._missing then
+                                    s._missing = nil
+                                    s._missingSince = nil
+                                end
+                                if s.enabled ~= true then
+                                    s.enabled = true
+                                end
                             end
                         end
-
                         ns.db.addonStatus[key] = s
                     end
                 end
+            end
+        end
+        -- Clean up if someone goes offline. clears session flags so next login is clean
+        for key, s in pairs(ns.db.addonStatus) do
+            if type(s) == "table" and s._onlineSince and not onlineSet[key] then
+                s._onlineSince = nil
+                s._missing = nil
+                s._missingSince = nil
+                s._missStrikes = nil
+                ns.db.addonStatus[key] = s
             end
         end
     end)

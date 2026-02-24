@@ -62,7 +62,6 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         ns.globals.update()
         ns.networking.initialize()
         ns.helpers.scanPlayerProfessions()
-        ProfScanBurst()
         ns.ui.initialize()
         ns.components.minimapbutton.create()
         C_Timer.After(2, RequestGuildRoster)
@@ -73,11 +72,43 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         if ns.sync and ns.sync.mailexception and ns.sync.mailexception.writeTransactions then
             ns.sync.mailexception.writeTransactions()
         end
+
+        local ver = ns.globals and ns.globals.ADDONVERSION or "?"
+        local meKey = (ns.helpers and ns.helpers.getKey and ns.globals and ns.globals.CHARACTERNAME) and ns.helpers.getKey(ns.globals.CHARACTERNAME) or nil
+
+        if meKey and ns.db and ns.db.addonStatus then
+            ns.db.addonStatus[meKey] = ns.db.addonStatus[meKey] or {}
+            local s = ns.db.addonStatus[meKey]
+            s.seen = true
+            s.enabled = false
+            s.version = ver
+            s.lastSeen = GetTime()
+            s._lastOfflineAt = GetTime()
+        end
+
         if ns.networking and ns.networking.SendToGuild and ns.networking.CommHandler then
             ns.networking.SendToGuild("ADDON_STATUS", {
                 state = "OFFLINE",
-                version = ns.globals and ns.globals.ADDONVERSION or "?"
+                version = ver
             })
+        end
+
+        if ns.guildLog and ns.guildLog.send and meKey then
+            local offlineAt = GetTime()
+            ns.networking = ns.networking or {}
+            ns.networking._pendingDisabledToken = offlineAt
+
+            C_Timer.After(12, function()
+                if not ns.networking or ns.networking._pendingDisableToken ~= offlineAt then return end
+                if not ns.db or not ns.db.addonStatus or not ns.helpers then return end
+
+                local s = ns.db.addonStatus[meKey]
+                if not s then return end
+                if s.enabled == true then return end
+
+                local short = ns.helpers.getShort(meKey) or meKey
+                ns.guildLog.send(short .. " disabled the addon.", { broadcast = true})
+            end)
         end
         return
     
@@ -106,7 +137,9 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 ns.restrictions.sendmail.initialize()
                 ns.sync.base.initialize()
                 ns.sync.mailexception.initialize()
-                C_Timer.After(1.0, DelayedProfScan)
+                ProfScanBurst()
+                C_Timer.After(12, DelayedProfScan)
+                C_Timer.After(25, DelayedProfScan)
                 SafeUIRefresh()
             end
         else

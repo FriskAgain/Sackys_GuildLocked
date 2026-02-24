@@ -216,8 +216,14 @@ function helpers.scanPlayerProfessions()
 
     ns.profReady = helpers.professionsReady()
     if not ns.profReady then
+        helpers._profRetry = helpers._profRetry or 0
+        if helpers._profRetry < 10 then
+            helpers._profRetry = helpers._profRetry + 1
+            C_Timer.After(2, function() helpers.scanPlayerProfessions() end)
+        end
         return
     end
+    helpers._profRetry = 0
 
     local name, realm = UnitFullName("player")
     if not name then return end
@@ -296,12 +302,15 @@ function helpers.playerCanViewGuildLog()
     if not IsInGuild() then return false end
 
     local me = ns.globals and ns.globals.CHARACTERNAME
-    if not me then return false end
+    if not me or me == "" then return false end
 
-    local rankIndex = ns.helpers.getGuildMemberRank(me)
-    if type(rankIndex) ~= "number" then return false end
+    local rankIndex = ns.helpers and ns.helpers.getGuildMemberRank and ns.helpers.getGuildMemberRank(me)
+    if type(rankIndex) ~= "number" then
+        return false
+    end
 
-    local requiredRank = (ns.db.profile and ns.db.profile.logMinRank)
+    local profile = ns.db.profile or {}
+    local requiredRank = profile.logMinRank
     if type(requiredRank) ~= "number" then requiredRank = 2 end
 
     return rankIndex <= requiredRank

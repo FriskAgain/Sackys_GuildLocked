@@ -1,12 +1,19 @@
 local addonName, ns = ...
-local options = nil
 local option_defaults = {}
 ns.option_defaults = option_defaults
 
 function option_defaults.initialize()
-    if type(SGLKOptions) ~= "table" then
-        SGLKOptions = {}
-    end
+    -- SavedVariables: DB first
+    if type(SGLKDB) ~= "table" then SGLKDB = {} end
+    if type(SGLKDB.chars) ~= "table" then SGLKDB.chars = {} end
+    if type(SGLKDB.addonStatus) ~= "table" then SGLKDB.addonStatus = {} end
+    if type(SGLKDB.guildLog) ~= "table" then SGLKDB.guildLog = {} end
+    if type(SGLKDB.profile) ~= "table" then SGLKDB.profile = {} end
+
+    ns.db = SGLKDB
+
+    -- SavedVariables: options
+    if type(SGLKOptions) ~= "table" then SGLKOptions = {} end
     ns.options = SGLKOptions
 
     if type(ns.options.debug) ~= "boolean" then
@@ -16,24 +23,6 @@ function option_defaults.initialize()
     if type(ns.options.minimap) ~= "table" then
         ns.options.minimap = {}
     end
-
-    if type(SGLKDB) ~= "table" then
-        SGLKDB = {}
-    end
-    if type(SGLKDB.chars) ~= "table" then
-        SGLKDB.chars = {}
-    end
-    if type(SGLKDB.addonStatus) ~= "table" then
-        SGLKDB.addonStatus = {}
-    end
-    if type(SGLKDB.guildLog) ~= "table" then
-        SGLKDB.guildLog = {}
-    end
-    if type(SGLKDB.profile) ~= "table" then
-        SGLKDB.profile = {}
-    end
-
-    ns.db = SGLKDB
 
     -- Officer visibility setting (0=GM, 1=Officer, 2=2.Officer)
     if type(ns.db.profile.logMinRank) ~= "number" then
