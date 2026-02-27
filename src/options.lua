@@ -9,9 +9,9 @@ function option_defaults.initialize()
     if type(SGLKDB.addonStatus) ~= "table" then SGLKDB.addonStatus = {} end
     if type(SGLKDB.guildLog) ~= "table" then SGLKDB.guildLog = {} end
     if type(SGLKDB.profile) ~= "table" then SGLKDB.profile = {} end
-
-    ns.db.profile = ns.db.profile or {}
+    
     ns.db = SGLKDB
+    ns.db.profile = ns.db.profile or {}
     -------------------------------------------------
     -- Schema Migration System
     -------------------------------------------------
