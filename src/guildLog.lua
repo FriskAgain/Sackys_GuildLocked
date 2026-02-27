@@ -62,7 +62,7 @@ function ns.guildLog.send(message, opts)
 
     local entry = {
         message = message,
-        sender = (ns.globals and ns.globals.CHARACTERNAME) or UnitName("palyer") or "?",
+        sender = (ns.globals and ns.globals.CHARACTERNAME) or UnitName("player") or "?",
         time = time()
     }
 

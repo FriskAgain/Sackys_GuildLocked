@@ -10,7 +10,20 @@ function option_defaults.initialize()
     if type(SGLKDB.guildLog) ~= "table" then SGLKDB.guildLog = {} end
     if type(SGLKDB.profile) ~= "table" then SGLKDB.profile = {} end
 
+    ns.db.profile = ns.db.profile or {}
     ns.db = SGLKDB
+    -------------------------------------------------
+    -- Schema Migration System
+    -------------------------------------------------
+    local schema = tonumber(ns.db.profile._schemaVersion or 0) or 0
+    if schema < 1 then
+        if ns.db.profile.logMinRank == nil then
+            ns.db.profile.logMinRank = 3
+        elseif ns.db.profile.logMinRank == 2 then
+            ns.db.profile.logMinRank = 3
+        end
+        ns.db.profile._schemaVersion = 1
+    end
 
     -- SavedVariables: options
     if type(SGLKOptions) ~= "table" then SGLKOptions = {} end
@@ -24,8 +37,8 @@ function option_defaults.initialize()
         ns.options.minimap = {}
     end
 
-    -- Officer visibility setting (0=GM, 1=Officer, 2=2.Officer)
+    -- Officer visibility setting (0=GM, 1=GM2, 2=Officer, 3=2.Officer)
     if type(ns.db.profile.logMinRank) ~= "number" then
-        ns.db.profile.logMinRank = 2
+        ns.db.profile.logMinRank = 3
     end
 end
