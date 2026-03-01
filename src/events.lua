@@ -21,6 +21,8 @@ frame:RegisterEvent("PLAYER_DEAD")
 frame:RegisterEvent("SKILL_LINES_CHANGED")
 frame:RegisterEvent("PARTY_INVITE_REQUEST")
 frame:RegisterEvent("GROUP_ROSTER_UPDATE")
+-- Version 1.0.7 bug fix new code below:
+frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 local didGuildInit = false
 
@@ -131,6 +133,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
             if type(rank) == "number" then
                 didGuildInit = true
                 ns.log.debug("Guild roster ready. Initializing guild systems.")
+                
 
                 ns.option_defaults.initialize()
                 ns.sglk.initialize()
@@ -141,6 +144,14 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 C_Timer.After(12, DelayedProfScan)
                 C_Timer.After(25, DelayedProfScan)
                 SafeUIRefresh()
+                -- Version 1.0.7 updated code below
+                local ver = ns.globals.ADDONVERSION or "?"
+    
+                ns.networking.SendToGuild("ADDON_STATUS", {
+                    state = "ONLINE",
+                    version = ver
+                })
+                -- Updated code ends here
             end
         else
             SafeUIRefresh()
@@ -183,6 +194,17 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
             SafeUIRefresh()
         end
         return
+
+    -- Version 1.0.7
+    elseif event == "PLAYER_ENTERING_WORLD" then
+
+    C_Timer.After(2, function()
+        if IsInGuild() then
+            ns.log.debug("Refreshing guild roster after entering world")
+            RequestGuildRoster()
+        end
+    end)
+    -- New code ends here
 
     elseif event == "AUCTION_HOUSE_SHOW" then
         ns.restrictions.auctionhouse.handle()
