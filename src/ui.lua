@@ -145,28 +145,39 @@ end
 
 function ui.refresh()
 
-    local showOnlineOnly = false
+    -- Version 1.0.7 new code
+    if not ui.frame or not ui.frame.frame:IsShown() then return end
 
-    ui.dataBuffer = ui.updateMemberList(showOnlineOnly)
-    ui._lastReqVersion = ui._lastReqVersion or 0
-    local now = GetTime()
-    if now - ui._lastReqVersion >= 30 then
-        ui._lastReqVersion = now
-        ns.networking.SendToGuild("REQ_VERSION", {})
-    end
+        if ui._refreshPending then return end
+            ui._refreshPending = true
 
-    if ui.memberTable then
+        C_Timer.After(0.2, function()
 
-        ui.memberTable.data = ui.dataBuffer
-        ui.memberTable:refresh()
+            ui._refreshPending = false
+    
+            local showOnlineOnly = false
 
-    end
+            ui.dataBuffer = ui.updateMemberList(showOnlineOnly)
 
-    if ui._officerLogBtn and ns.helpers and ns.helpers.playerCanViewGuildLog then
-        if ns.helpers.playerCanViewGuildLog() then ui._officerLogBtn:Show() else ui._officerLogBtn:Hide() end
-    end
+            ui._lastReqVersion = ui._lastReqVersion or 0
+            local now = GetTime()
 
+            if now - ui._lastReqVersion >= 30 then
+                ui._lastReqVersion = now
+                ns.networking.SendToGuild("REQ_VERSION", {})
+            end
+
+            if ui.memberTable then
+                ui.memberTable.data = ui.dataBuffer
+                ui.memberTable:refresh()
+            end
+
+            if ui._officerLogBtn and ns.helpers and ns.helpers.playerCanViewGuildLog then
+                if ns.helpers.playerCanViewGuildLog() then ui._officerLogBtn:Show() else ui._officerLogBtn:Hide() end
+            end
+    end)
 end
+    -- New code ends here
 
 function ui.ensureGuildLogUI()
     if ui.guildLogFrame then return end
@@ -308,7 +319,11 @@ function ui.updateGuildLog()
     C_Timer.After(0.35, function()
         ui._guildLogUpdatePending = false
 
-        local rows = {}
+        -- Version 1.0.7 new code
+        ui._guildRows = ui._guildRows or {}
+        local rows = ui._guildRows
+        wipe(rows)
+        -- New code ends here
         for _, entry in ipairs(ns.db.guildLog or {}) do
             local ts = entry.time or 0
             rows[#rows+1] = {

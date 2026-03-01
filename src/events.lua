@@ -34,9 +34,21 @@ local function RequestGuildRoster()
     end
 end
 
+-- Version 1.0.7 new SafeUIRefresh
+local uiRefreshPending = false
+
 local function SafeUIRefresh()
-    if ns.ui and ns.ui.frame and ns.ui.frame.frame and ns.ui.frame.frame.IsShown and ns.ui.frame.frame:IsShown() then
-        ns.ui.refresh()
+
+    if uiRefreshPending then return end
+
+    if ns.ui and ns.ui.frame and ns.ui.frame.frame and ns.ui.frame.frame:IsShown() then
+
+        uiRefreshPending = true
+
+        C_Timer.After(0.3, function()
+            uiRefreshPending = false
+            ns.ui.refresh()
+        end)
     end
 end
 
