@@ -105,26 +105,11 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 state = "OFFLINE",
                 version = ver
             })
-        end
-
-        if ns.guildLog and ns.guildLog.send and meKey then
-            local offlineAt = GetTime()
-            ns.networking = ns.networking or {}
-            ns.networking._pendingDisabledToken = offlineAt
-
-            C_Timer.After(12, function()
-                if not ns.networking or ns.networking._pendingDisableToken ~= offlineAt then return end
-                if not ns.db or not ns.db.addonStatus or not ns.helpers then return end
-
-                local s = ns.db.addonStatus[meKey]
-                if not s then return end
-                if s.enabled == true then return end
-
-                local short = ns.helpers.getShort(meKey) or meKey
-                ns.guildLog.send(short .. " disabled the addon.", { broadcast = true})
-            end)
-        end
+        end 
         return
+    end
+    -- Removed the delayed sendtoguild, since the game runs in a shutdown mode.
+    -- Just results in a timer never firing off.
     
     elseif event == "PLAYER_REGEN_ENABLED" then
         if ns.ui and ns.ui._closeGuildLogAfterCombat and ns.ui.guildLogFrame and ns.ui.guildLogFrame.frame then
@@ -208,14 +193,14 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         return
 
     -- Version 1.0.7
-    elseif event == "PLAYER_ENTERING_WORLD" then
-
-    C_Timer.After(2, function()
-        if IsInGuild() then
-            ns.log.debug("Refreshing guild roster after entering world")
-            RequestGuildRoster()
-        end
-    end)
+    elseif event == "PLAYER_ENTERING_WORLD" then -- Indention errors, just make sure that the logic is within the proper area. Lua is picky
+        C_Timer.After(2, function()
+            if IsInGuild() then
+                ns.log.debug("Refreshing guild roster after entering world")
+                RequestGuildRoster()
+            end
+        end)
+        return -- You want to return these to close the branch. In Lua that would be a logic / readability landmine or in some cases a syntax error
     -- New code ends here
 
     elseif event == "AUCTION_HOUSE_SHOW" then
