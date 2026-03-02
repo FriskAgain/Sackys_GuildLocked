@@ -107,7 +107,6 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
             })
         end 
         return
-    end
     -- Removed the delayed sendtoguild, since the game runs in a shutdown mode.
     -- Just results in a timer never firing off.
     

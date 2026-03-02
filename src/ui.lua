@@ -175,9 +175,8 @@ function ui.refresh()
             if ui._officerLogBtn and ns.helpers and ns.helpers.playerCanViewGuildLog then
                 if ns.helpers.playerCanViewGuildLog() then ui._officerLogBtn:Show() else ui._officerLogBtn:Hide() end
             end
-        end) -- Incorrect indention
-    end -- Added a new end to finish the structure
-end
+        end) -- Incorrect indention -- Added a new end to finish the structure
+    end
     -- New code ends here
 
 function ui.ensureGuildLogUI()
