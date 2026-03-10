@@ -30,7 +30,12 @@ function ui.initialize()
 
     if ui.frame then return end
 
-    ui.frame = ns.components.windowframe:Create(650, 400):Title("Sacky's Guild Locked"):Draggable()
+    ui.frame = ns.components.windowframe
+        :Create(760, 440, "SGLKMainFrame")
+        :Title("Sacky's Guild Locked")
+        :Draggable()
+        :Resizable(760, 440)
+        :EscClose()
 
     ui.frame.background = ui.frame.frame:CreateTexture(nil, "BACKGROUND")
     ui.frame.background:SetColorTexture(0, 0, 0, 0.3)
@@ -44,8 +49,8 @@ function ui.initialize()
     end
 
     local logBtn = CreateFrame("Button", nil, ui.frame.frame, "UIPanelButtonTemplate")
-    logBtn:SetSize(80, 18)
-    logBtn:SetPoint("TOPRIGHT", ui.frame.frame, "TOPRIGHT", -36, -2)
+    logBtn:SetSize(100, 22)
+    logBtn:SetPoint("TOPRIGHT", ui.frame.frame, "TOPRIGHT", -70, -30)
     logBtn:SetText("Officer Log")
 
     logBtn:SetScript("OnClick", function()
@@ -60,8 +65,8 @@ function ui.initialize()
     ui._officerLogBtn = logBtn
 
     local memberlist = CreateFrame("Frame", nil, ui.frame.frame)
-    memberlist:SetPoint("TOPLEFT", ui.frame.frame, "TOPLEFT", 10, -40)
-    memberlist:SetPoint("BOTTOMRIGHT", ui.frame.frame, "BOTTOMRIGHT", -10, 10)
+    memberlist:SetPoint("TOPLEFT", ui.frame.frame, "TOPLEFT", 12, -58)
+    memberlist:SetPoint("BOTTOMRIGHT", ui.frame.frame, "BOTTOMRIGHT", -12, 12)
 
     local metadata = {
 
@@ -72,37 +77,44 @@ function ui.initialize()
 
         col1 = {
             header = "Name",
-            field = "name"
+            field = "name",
+            minWidth = 140
         },
 
         col2 = {
             header = "Online",
-            field = "online"
+            field = "online",
+            width = 70
         },
 
         col3 = {
             header = "Profession 1",
-            field = "prof1"
+            field = "prof1",
+            width = 70
         },
 
         col4 = {
             header = "Skill",
-            field = "prof1Skill"
+            field = "prof1Skill",
+            width = 70
         },
 
         col5 = {
             header = "Profession 2",
-            field = "prof2"
+            field = "prof2",
+            width = 120
         },
 
         col6 = {
             header = "Skill",
-            field = "prof2Skill"
+            field = "prof2Skill",
+            width = 70
         },
 
         col7 = {
             header = "Addon Active",
-            field = "addon_active"
+            field = "addon_active",
+            width = 110
         }
 
     }
@@ -132,6 +144,7 @@ function ui.toggleWindow()
     else
         ui.refresh()
         ui.frame.frame:Show()
+        ui.frame.frame:Raise()
         if ui.refreshTicker then
             ui.refreshTicker:Cancel()
         end
@@ -181,36 +194,69 @@ function ui.refresh()
 
 function ui.ensureGuildLogUI()
     if ui.guildLogFrame then return end
-    -- Permission gate
     if ns.helpers and ns.helpers.playerCanViewGuildLog and not ns.helpers.playerCanViewGuildLog() then
         return
     end
 
-    ui.guildLogFrame = ns.components.windowframe:Create(650, 420):Title("SGLK Officer Log"):Draggable()
-    ui.guildLogFrame.frame:Hide()
+    ui.guildLogFrame = ns.components.windowframe
+        :Create(820, 500, "SGLKGuildLogFrame")
+        :Title("SGLK Officer Log")
+        :Draggable()
+        :Resizable(700, 380)
+        :EscClose()
 
-    local holder = CreateFrame("Frame", nil, ui.guildLogFrame.frame)
-    holder:SetPoint("TOPLEFT", ui.guildLogFrame.frame, "TOPLEFT", 10, -30)
-    holder:SetPoint("BOTTOMRIGHT", ui.guildLogFrame.frame, "BOTTOMRIGHT", -10, 10)
+    local logFrame = ui.guildLogFrame.frame
+    logFrame:ClearAllPoints()
+    if ui.frame and ui.frame.frame then
+        logFrame:SetPoint("TOPLEFT", ui.frame.frame, "TOPRIGHT", 12, 0)
+    else
+        logFrame:SetPoint("CENTER", UIParent, "CENTER", 120, 0)
+    end
+
+    logFrame:SetClampedToScreen(true)
+    logFrame:Hide()
+
+    logFrame.background = logFrame:CreateTexture(nil, "BACKGROUND")
+    logFrame.background:SetColorTexture(0, 0, 0, 0.3)
+    logFrame.background:SetAllPoints()
+
+    local holder = CreateFrame("Frame", nil, logFrame)
+    holder:SetPoint("TOPLEFT", logFrame, "TOPLEFT", 12, -58)
+    holder:SetPoint("BOTTOMRIGHT", logFrame, "BOTTOMRIGHT", -12, 12)
 
     local meta = {
-        col1 = { header = "Time", field = "time" },
-        col2 = { header = "Sender", field = "sender" },
-        col3 = { header = "Message", field = "message" },
-        sort = { col1 = { field = "ts", order = "desc" } }
+        sort = {
+            col1 = { field = "ts", order = "desc" }
+        },
+        col1 = {
+            header = "Time",
+            field = "time",
+            width = 135
+        },
+        col2 = {
+            header = "Sender",
+            field = "sender",
+            width = 140
+        },
+        col3 = {
+            header = "Message",
+            field = "message"
+        }
     }
 
     ui.guildLogTable = ns.components.tablev2:new(holder, meta, {}, 18)
 
-    local clearBtn = CreateFrame("Button", nil, ui.guildLogFrame.frame, "UIPanelButtonTemplate")
-    clearBtn:SetSize(60, 18)
-    clearBtn:SetPoint("TOPRIGHT", ui.guildLogFrame.frame, "TOPRIGHT", -36, -2)
+    local clearBtn = CreateFrame("Button", nil, logFrame, "UIPanelButtonTemplate")
+    clearBtn:SetSize(70, 22)
+    clearBtn:SetPoint("TOPRIGHT", logFrame, "TOPRIGHT", -70, -30)
     clearBtn:SetText("Clear")
     clearBtn:SetScript("OnClick", function()
         if not ns.db then return end
         ns.db.guildLog = ns.db.guildLog or {}
         wipe(ns.db.guildLog)
-        if ui.updateGuildLog then ui.updateGuildLog() end
+        if ui.updateGuildLog then
+            ui.updateGuildLog()
+        end
     end)
 end
 
@@ -222,17 +268,22 @@ function ui.toggleGuildLog()
         end
         return
     end
-
-    if ui.guildLogFrame.frame:IsShown() then
+    local frame = ui.guildLogFrame.frame
+    if frame:IsShown() then
         if InCombatLockdown and InCombatLockdown() then
             ui._closeGuildLogAfterCombat = true
-            if ns.log and ns.log.info then ns.log.info("Will close Officer Log after combat.") end
+            if ns.log and ns.log.info then
+                ns.log.info("Will close Officer Log after combat.")
+            end
             return
         end
-        ui.guildLogFrame.frame:Hide()
+        frame:Hide()
     else
-        ui.guildLogFrame.frame:Show()
-        if ui.updateGuildLog then ui.updateGuildLog() end
+        frame:Show()
+        frame:Raise()
+        if ui.updateGuildLog then
+            ui.updateGuildLog()
+        end
     end
 end
 
@@ -326,11 +377,15 @@ function ui.updateGuildLog()
         -- New code ends here
         for _, entry in ipairs(ns.db.guildLog or {}) do
             local ts = entry.time or 0
+            local sender = tostring(entry.sender or "?")
+            local shortSender = Ambiguate(sender, "short") or sender
+            local msg = tostring(entry.message or "")
             rows[#rows+1] = {
                 ts = ts,
-                time = date("%d/%m %H:%M:%S", ts),
-                sender = entry.sender or "?",
-                message = entry.message or ""
+                time = date("%d/%m %H:%M", ts),
+                sender = shortSender,
+                message = msg,
+                kind = entry.kind or "info"
             }
         end
 

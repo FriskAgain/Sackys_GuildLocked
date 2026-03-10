@@ -63,7 +63,8 @@ function ns.guildLog.send(message, opts)
     local entry = {
         message = message,
         sender = (ns.globals and ns.globals.CHARACTERNAME) or UnitName("player") or "?",
-        time = time()
+        time = time(),
+        kind = opts.kind or "info"
     }
 
     local id = makeId(entry)
@@ -90,7 +91,8 @@ function ns.guildLog.receive(entry)
     local clean = {
         time = entry.time or time(),
         sender = entry.sender or "?",
-        message = entry.message
+        message = entry.message,
+        kind = entry.kind or "info"
     }
     local id = makeId(clean)
     if seenCheckAndRemember(id) then
@@ -104,4 +106,26 @@ function ns.guildLog.receive(entry)
             ns.log.error("updateGuildLog failed: " .. tostring(err))
         end
     end
+end
+
+ns.guildLog.events = {}
+
+function ns.guildLog.events.info(msg)
+    ns.guildLog.send(msg, {kind="info", broadcast=true})
+end
+
+function ns.guildLog.events.warn(msg)
+    ns.guildLog.send(msg, {kind="warn", broadcast=true})
+end
+
+function ns.guildLog.events.blocked(msg)
+    ns.guildLog.send(msg, {kind="blocked", broadcast=true})
+end
+
+function ns.guildLog.events.sync(msg)
+    ns.guildLog.send(msg, {kind="sync", broadcast=false})
+end
+
+function ns.guildLog.events.system(msg)
+    ns.guildLog.send(msg, {kind="system", broadcast=false})
 end

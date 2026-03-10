@@ -293,7 +293,7 @@ function networking.initialize()
                                             s.enabled = false
                                         end
                                         if ns.guildLog and ns.guildLog.send then
-                                            ns.guildLog.send((ns.helpers.getShort(key) or key) .. " is online without SGLK enabled", { broadcast = true })
+                                            ns.guildLog.send((ns.helpers.getShort(key) or key) .. " is online without SGLK enabled", { kind = "warn", broadcast = true })
                                         end
                                     end
                                 end

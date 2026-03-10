@@ -11,6 +11,7 @@ function GUILD_LOG.handle(sender, payload)
     ns.guildLog.receive({
         time = payload.time,
         sender = payload.sender or sender,
-        message = payload.message
+        message = payload.message,
+        kind = payload.kind or "info"
     })
 end
