@@ -27,7 +27,6 @@ local function shouldRequestProf(charData)
 end
 
 function ui.initialize()
-
     if ui.frame then return end
 
     ui.frame = ns.components.windowframe
@@ -90,7 +89,7 @@ function ui.initialize()
         col3 = {
             header = "Profession 1",
             field = "prof1",
-            width = 70
+            minwidth = 120
         },
 
         col4 = {
@@ -102,7 +101,7 @@ function ui.initialize()
         col5 = {
             header = "Profession 2",
             field = "prof2",
-            width = 120
+            minwidth = 120
         },
 
         col6 = {
@@ -121,15 +120,23 @@ function ui.initialize()
 
     local showOnlineOnly = false
 
+    if IsInGuild and IsInGuild() and GuildRoster then
+        GuildRoster()
+    end
+
     ui.dataBuffer = ns.helpers.getGuildMemberData(showOnlineOnly)
     ui.memberTable = ns.components.tablev2:new(
         memberlist,
         metadata,
-        ui.dataBuffer,
+        {},
         20
     )
-
-    ui.refresh()
+    ui.frame.frame.memberTable = ui.memberTable
+    C_Timer.After(0.5, function()
+        if ns.ui and ns.ui.refresh then
+            ns.ui.refresh()
+        end
+    end)
     ns.networking.SendToGuild("REQ_VERSION", {})
 
 end
@@ -142,9 +149,14 @@ function ui.toggleWindow()
             ui.refreshTicker = nil
         end
     else
-        ui.refresh()
         ui.frame.frame:Show()
         ui.frame.frame:Raise()
+
+        C_Timer.After(0.1, function()
+            if ns.ui and ns.ui.refresh then
+                ns.ui.refresh()
+            end
+        end)
         if ui.refreshTicker then
             ui.refreshTicker:Cancel()
         end
@@ -157,40 +169,63 @@ function ui.toggleWindow()
 end
 
 function ui.refresh()
+    if not ui.frame then return end
+    if ui._refreshPending then return end
 
-    -- Version 1.0.7 new code
-    if not ui.frame or not ui.frame.frame:IsShown() then return end
+    ui._refreshPending = true
 
-        if ui._refreshPending then return end
-            ui._refreshPending = true
+    C_Timer.After(0.2, function()
+        ui._refreshPending = false
 
-        C_Timer.After(0.2, function()
+        local showOnlineOnly = false
 
-            ui._refreshPending = false
-    
-            local showOnlineOnly = false
+        if IsInGuild and IsInGuild() and GuildRoster then
+            GuildRoster()
+        end
 
-            ui.dataBuffer = ui.updateMemberList(showOnlineOnly)
+        ui.dataBuffer = ui.updateMemberList(showOnlineOnly)
 
-            ui._lastReqVersion = ui._lastReqVersion or 0
-            local now = GetTime()
+        ui._rosterRetryCount = ui._rosterRetryCount or 0
+        if IsInGuild and IsInGuild() and (#(ui.dataBuffer or {}) == 0) then
+            if ui._rosterRetryCount < 5 then
+                ui._rosterRetryCount = ui._rosterRetryCount + 1
 
-            if now - ui._lastReqVersion >= 30 then
-                ui._lastReqVersion = now
-                ns.networking.SendToGuild("REQ_VERSION", {})
+                if GuildRoster then
+                    GuildRoster()
+                end
+
+                C_Timer.After(1, function()
+                    if ns.ui and ns.ui.refresh then
+                        ns.ui.refresh()
+                    end
+                end)
             end
+        else
+            ui._rosterRetryCount = 0
+        end
 
-            if ui.memberTable then
-                ui.memberTable.data = ui.dataBuffer
-                ui.memberTable:refresh()
-            end
+        ui._lastReqVersion = ui._lastReqVersion or 0
+        local now = GetTime()
 
-            if ui._officerLogBtn and ns.helpers and ns.helpers.playerCanViewGuildLog then
-                if ns.helpers.playerCanViewGuildLog() then ui._officerLogBtn:Show() else ui._officerLogBtn:Hide() end
+        if now - ui._lastReqVersion >= 30 then
+            ui._lastReqVersion = now
+            ns.networking.SendToGuild("REQ_VERSION", {})
+        end
+
+        if ui.memberTable then
+            ui.memberTable.data = ui.dataBuffer
+            ui.memberTable:refresh()
+        end
+
+        if ui._officerLogBtn and ns.helpers and ns.helpers.playerCanViewGuildLog then
+            if ns.helpers.playerCanViewGuildLog() then
+                ui._officerLogBtn:Show()
+            else
+                ui._officerLogBtn:Hide()
             end
-        end) -- Incorrect indention -- Added a new end to finish the structure
-    end
-    -- New code ends here
+        end
+    end)
+end
 
 function ui.ensureGuildLogUI()
     if ui.guildLogFrame then return end

@@ -10,6 +10,12 @@ local function safeString(v)
     return tostring(v)
 end
 
+local function snapWidth(value, step)
+    step = step or 2
+    if not value then return 0 end
+    return math.floor((value / step) + 0.5) * step
+end
+
 local function getKindColor(kind)
     if kind == "warn" then
         return 1, 0.82, 0
@@ -74,8 +80,7 @@ function tablev2:new(parent, metadata, data, row_height)
     end)
 
     obj.container = CreateFrame("Frame", nil, parent)
-    obj.container:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
-    obj.container:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", 0, 0)
+    obj.container:SetAllPoints(parent)
 
     obj.header = CreateFrame("Frame", nil, obj.container)
     obj.header:SetPoint("TOPLEFT", obj.container, "TOPLEFT", 0, 0)
@@ -88,7 +93,9 @@ function tablev2:new(parent, metadata, data, row_height)
 
     obj.content = CreateFrame("Frame", nil, obj.scrollFrame)
     obj.content:SetPoint("TOPLEFT", obj.scrollFrame, "TOPLEFT", 0, 0)
+    obj.content:SetPoint("TOPRIGHT", obj.scrollFrame, "TOPRIGHT", 0, 0)
     obj.scrollFrame:SetScrollChild(obj.content)
+    obj.content:SetWidth(obj.scrollFrame:GetWidth())
 
     local scrollbar = obj.scrollFrame.ScrollBar
     if scrollbar then
@@ -98,7 +105,12 @@ function tablev2:new(parent, metadata, data, row_height)
     end
 
     obj.container:SetScript("OnSizeChanged", function()
-        obj:refresh()
+        obj.container:SetWidth(obj.scrollFrame:GetWidth())
+        C_Timer.After(0, function()
+            if obj then
+                obj:refresh()
+            end
+        end)
     end)
 
     obj:refresh()
@@ -128,7 +140,7 @@ end
 function tablev2:calculateFieldWidths()
     if not self.fields or #self.fields == 0 then return end
 
-    local usableWidth = self:getUsableWidth()
+    local usableWidth = snapWidth(self:getUsableWidth(), 4)
     local widths = {}
     local flexibleIndices = {}
     local usedWidth = 0
@@ -136,8 +148,8 @@ function tablev2:calculateFieldWidths()
     for i, field in ipairs(self.fields) do
         local explicit = tonumber(field.width)
         if explicit and explicit > 0 then
-            widths[i] = explicit
-            usedWidth = usedWidth + explicit
+            widths[i] = snapWidth(explicit, 4)
+            usedWidth = usedWidth + widths[i]
         else
             local maxWidth = self:measureTextWidth(field.header) + 18
             for _, item in ipairs(self.data) do
@@ -146,7 +158,7 @@ function tablev2:calculateFieldWidths()
                     value = item[field.field]
                 elseif item[string.lower(field.field)] ~= nil then
                     value = item[string.lower(field.field)]
-                elseif item[string.gsub(field.field "_", "")] ~= nil then
+                elseif item[string.gsub(field.field, "_", "")] ~= nil then
                     value = item[string.gsub(field.field, "_", "")]
                 else
                     value = ""
@@ -176,14 +188,31 @@ function tablev2:calculateFieldWidths()
                 maxWidth = field.maxWidth
             end
 
-            widths[i] = math.max(maxWidth, minWidth)
+            widths[i] = snapWidth(math.max(maxWidth, minWidth), 4)
             usedWidth = usedWidth + widths[i]
             table.insert(flexibleIndices, i)
         end
     end
 
-    if usedWidth < usableWidth then
-        local growIndex = flexibleIndices[#flexibleIndices] or #self.fields
+    if usedWidth < usableWidth and #flexibleIndices > 0 then
+        local extra = usableWidth - usedWidth
+        local perCol = snapWidth(math.floor(extra / #flexibleIndices), 4)
+        local distributed = 0
+
+        for _, idx in ipairs(flexibleIndices) do
+            widths[idx] = widths[idx] + perCol
+            distributed = distributed + perCol
+        end
+
+        local remainder = usableWidth - (usedWidth + distributed)
+        if remainder > 0 then
+            widths[flexibleIndices[#flexibleIndices]] = widths[flexibleIndices[#flexibleIndices]] + remainder
+        end
+
+        usedWidth = usableWidth
+
+    elseif usedWidth < usableWidth then
+        local growIndex = #self.fields
         widths[growIndex] = widths[growIndex] + (usableWidth - usedWidth)
         usedWidth = usableWidth
     end
@@ -204,6 +233,7 @@ function tablev2:createHeaderCell(parent, x, width, field)
     fs:SetPoint("RIGHT", button, "RIGHT", -4, 0)
     fs:SetJustifyH("LEFT")
     fs:SetJustifyV("MIDDLE")
+    fs:SetWordWrap(false)
 
     local arrow = ""
     if self.sortState.column == field.field then
@@ -232,17 +262,18 @@ function tablev2:createHeaderCell(parent, x, width, field)
 end
 
 function tablev2:updateHeader()
-    if self.headerCells then
-        for _, cell in ipairs(self.headerCells) do
-            if cell then
-                cell:Hide()
-                cell:SetParent(nil)
-            end
-        end
+    if self.header then
+        self.header:Hide()
+        self.header:SetParent(nil)
+        self.header = nil
     end
-    self.headerCells = {}
 
+    self.header = CreateFrame("Frame", nil, self.container)
+    self.header:SetPoint("TOPLEFT", self.container, "TOPLEFT", 0, 0)
+    self.header:SetPoint("TOPRIGHT", self.container, "TOPRIGHT", 0, 0)
     self.header:SetHeight(self.row_height)
+
+    self.headerCells = {}
 
     local x = 0
     for i, field in ipairs(self.fields) do
@@ -254,7 +285,7 @@ function tablev2:updateHeader()
         x = x + width
     end
 
-    self:createLine(self.header, 0, -self.row_height + 1, self.totalColumnWidth, 1, 0.3, 0.3, 0.3, 1)
+    self:createLine(self.header, 0, -self.row_height + 1, self.totalColumnWidth, 1, 0.3, 0.3, 0.3, 1) 
 end
 
 function tablev2:createCell(row, x, width, value, field, item)

@@ -57,36 +57,41 @@ end
 
 function helpers.getGuildMemberData(onlineOnly)
     local members = {}
+
     if not IsInGuild() then
         return members
     end
 
-    if not ns.db then return members end
+    if not ns.db then
+        return members
+    end
+
     ns.db.chars = ns.db.chars or {}
 
-    local numMembers = GetNumGuildMembers()
+    local numMembers = GetNumGuildMembers() or 0
+
     for i = 1, numMembers do
         local name, _, _, _, _, _, _, _, online = GetGuildRosterInfo(i)
-        if name then
-            local key = helpers.getKey(name)
-            if key and (not onlineOnly or online) then
-                local charData = ns.db.chars[key]
+        if name and name ~= "" then
+            local key = helpers.getKey(name) or name
+            local charData = ns.db.chars[key]
+
+            if not onlineOnly or online then
                 table.insert(members, {
                     key = key,
-                    name = helpers.getShort(key) or key,
+                    name = helpers.getShort(key) or name or key,
                     online = online and "Yes" or "No",
-
-                    prof1 = charData and charData.prof1 or "-",
-                    prof1Skill = charData and charData.prof1Skill or "-",
-                    prof2 = charData and charData.prof2 or "-",
-                    prof2Skill = charData and charData.prof2Skill or "-",
+                    prof1 = (charData and charData.prof1) or "-",
+                    prof1Skill = (charData and charData.prof1Skill) or "-",
+                    prof2 = (charData and charData.prof2) or "-",
+                    prof2Skill = (charData and charData.prof2Skill) or "-",
                 })
             end
         end
     end
 
     table.sort(members, function(a, b)
-        return (a.name or "") < (b.name or "")
+        return tostring(a.name or "") < tostring(b.name or "")
     end)
 
     return members

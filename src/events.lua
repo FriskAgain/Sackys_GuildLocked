@@ -34,22 +34,20 @@ local function RequestGuildRoster()
     end
 end
 
--- Version 1.0.7 new SafeUIRefresh
 local uiRefreshPending = false
 
 local function SafeUIRefresh()
-
     if uiRefreshPending then return end
+    if not (ns.ui and ns.ui.refresh) then return end
 
-    if ns.ui and ns.ui.frame and ns.ui.frame.frame and ns.ui.frame.frame:IsShown() then
+    uiRefreshPending = true
 
-        uiRefreshPending = true
-
-        C_Timer.After(0.3, function()
-            uiRefreshPending = false
+    C_Timer.After(0.3, function()
+        uiRefreshPending = false
+        if ns.ui and ns.ui.refresh then
             ns.ui.refresh()
-        end)
-    end
+        end
+    end)
 end
 
 local function DelayedProfScan()
@@ -78,7 +76,11 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         ns.helpers.scanPlayerProfessions()
         ns.ui.initialize()
         ns.components.minimapbutton.create()
-        C_Timer.After(2, RequestGuildRoster)
+        C_Timer.After(2, function()
+            if IsInGuild() and GuildRoster then
+                GuildRoster()
+            end
+        end)
         self:UnregisterEvent("PLAYER_LOGIN")
         return
 
@@ -139,18 +141,16 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 ProfScanBurst()
                 C_Timer.After(12, DelayedProfScan)
                 C_Timer.After(25, DelayedProfScan)
-                SafeUIRefresh()
-                -- Version 1.0.7 updated code below
+
                 local ver = ns.globals.ADDONVERSION or "?"
-    
                 ns.networking.SendToGuild("ADDON_STATUS", {
                     state = "ONLINE",
                     version = ver
                 })
-                -- Updated code ends here
             end
-        else
-            SafeUIRefresh()
+        end
+        if ns.ui and ns.ui.refresh then
+            ns.ui.refresh()
         end
 
         return
@@ -196,7 +196,9 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         C_Timer.After(2, function()
             if IsInGuild() then
                 ns.log.debug("Refreshing guild roster after entering world")
-                RequestGuildRoster()
+                if GuildRoster then
+                    GuildRoster()
+                end
             end
         end)
         return -- You want to return these to close the branch. In Lua that would be a logic / readability landmine or in some cases a syntax error
