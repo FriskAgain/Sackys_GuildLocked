@@ -21,7 +21,6 @@ frame:RegisterEvent("PLAYER_DEAD")
 frame:RegisterEvent("SKILL_LINES_CHANGED")
 frame:RegisterEvent("PARTY_INVITE_REQUEST")
 frame:RegisterEvent("GROUP_ROSTER_UPDATE")
--- Version 1.0.7 bug fix new code below:
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 local didGuildInit = false
@@ -50,6 +49,18 @@ local function SafeUIRefresh()
     end)
 end
 
+local guildRosterRefreshPending = false
+local function QueueGuildUIRefresh()
+    if guildRosterRefreshPending then return end
+    guildRosterRefreshPending = true
+    C_Timer.After(0.5, function()
+        guildRosterRefreshPending = false
+        if ns.ui and ns.ui.refresh then
+            ns.ui.refresh()
+        end
+    end)
+end
+
 local function DelayedProfScan()
     if ns.helpers and ns.helpers.scanPlayerProfessions then
         ns.helpers.scanPlayerProfessions()
@@ -57,8 +68,6 @@ local function DelayedProfScan()
 end
 
 local function ProfScanBurst()
-    -- A small burst of retries to catch the moment profs become available.
-    -- Safe even if scan already worked (Scan can throttle its own SendToGuild)
     C_Timer.After(1.0, DelayedProfScan)
     C_Timer.After(3.0, DelayedProfScan)
     C_Timer.After(6.0, DelayedProfScan)
@@ -84,6 +93,22 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         self:UnregisterEvent("PLAYER_LOGIN")
         return
 
+    elseif event == "PLAYER_GUILD_UPDATE" then
+        if IsInGuild() then
+            if GuildRoster then
+                GuildRoster()
+            end
+            C_Timer.After(1, function()
+                if ns.globals and ns.globals.update then
+                    ns.globals.update()
+                end
+                if ns.ui and ns.ui.refresh then
+                    ns.ui.refresh()
+                end
+            end)
+        end
+        return
+
     elseif event == "PLAYER_LOGOUT" then
         if ns.sync and ns.sync.mailexception and ns.sync.mailexception.writeTransactions then
             ns.sync.mailexception.writeTransactions()
@@ -96,7 +121,6 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
             ns.db.addonStatus[meKey] = ns.db.addonStatus[meKey] or {}
             local s = ns.db.addonStatus[meKey]
             s.seen = true
-            s.enabled = false
             s.version = ver
             s.lastSeen = GetTime()
             s._lastOfflineAt = GetTime()
@@ -109,8 +133,6 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
             })
         end 
         return
-    -- Removed the delayed sendtoguild, since the game runs in a shutdown mode.
-    -- Just results in a timer never firing off.
     
     elseif event == "PLAYER_REGEN_ENABLED" then
         if ns.ui and ns.ui._closeGuildLogAfterCombat and ns.ui.guildLogFrame and ns.ui.guildLogFrame.frame then
@@ -132,7 +154,6 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 didGuildInit = true
                 ns.log.debug("Guild roster ready. Initializing guild systems.")
                 
-
                 ns.option_defaults.initialize()
                 ns.sglk.initialize()
                 ns.restrictions.sendmail.initialize()
@@ -149,9 +170,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 })
             end
         end
-        if ns.ui and ns.ui.refresh then
-            ns.ui.refresh()
-        end
+        QueueGuildUIRefresh()
 
         return
 
@@ -191,8 +210,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         end
         return
 
-    -- Version 1.0.7
-    elseif event == "PLAYER_ENTERING_WORLD" then -- Indention errors, just make sure that the logic is within the proper area. Lua is picky
+    elseif event == "PLAYER_ENTERING_WORLD" then
         C_Timer.After(2, function()
             if IsInGuild() then
                 ns.log.debug("Refreshing guild roster after entering world")
@@ -201,8 +219,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 end
             end
         end)
-        return -- You want to return these to close the branch. In Lua that would be a logic / readability landmine or in some cases a syntax error
-    -- New code ends here
+        return
 
     elseif event == "AUCTION_HOUSE_SHOW" then
         ns.restrictions.auctionhouse.handle()

@@ -104,10 +104,20 @@ function tablev2:new(parent, metadata, data, row_height)
         scrollbar:SetPoint("BOTTOMLEFT", obj.scrollFrame, "BOTTOMRIGHT", 4, 16)
     end
 
+    obj._resizePending = false
     obj.container:SetScript("OnSizeChanged", function()
-        obj.container:SetWidth(obj.scrollFrame:GetWidth())
-        C_Timer.After(0, function()
-            if obj then
+        local newWidth = obj.container:GetWidth() or 0
+        if newWidth <= 0 then return end
+        if math.abs(newWidth - (obj._lastMeasuredWidth or 0)) < 4 then
+            return
+        end
+        
+        obj._lastMeasuredWidth = newWidth
+        if obj._resizePending then return end
+        obj._resizePending = true
+        C_Timer.After(0.15, function()
+            obj._resizePending = false
+            if obj and obj.container and obj.container:IsShown() then
                 obj:refresh()
             end
         end)
@@ -544,8 +554,20 @@ function tablev2:applySort()
 end
 
 function tablev2:refresh()
+    local oldWidth = self.totalColumnWidth or 0
+    local oldCount = self._lastRowCount or 0
     self:calculateFieldWidths()
     self:applySort()
-    self:updateHeader()
-    self:updateRows()
+    local widthChanged = (oldWidth ~= (self.totalColumnWidth or 0))
+    local rowCountChanged = (oldCount ~= #(self.data or {}))
+
+    if not self.header or widthChanged then
+        self:updateHeader()
+    end
+    if widthChanged or rowCountChanged or not self.rows or #self.rows == 0 then
+        self:updateRows()
+    else
+        self:updateRows()
+    end
+    self._lastRowCount = #(self.data or {})
 end

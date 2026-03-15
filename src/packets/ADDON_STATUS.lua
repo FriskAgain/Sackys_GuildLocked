@@ -9,10 +9,6 @@ local function safeVal(v, fallback)
     return v
 end
 
-local function nowSec()
-    return GetTime()
-end
-
 function ADDON_STATUS.handle(sender, payload)
     if not payload or not payload.state then return end
     if not ns.db then return end
@@ -30,6 +26,25 @@ function ADDON_STATUS.handle(sender, payload)
     local now     = GetTime()
 
     local s = ns.db.addonStatus[key] or {}
+    local wasEnabled = (s.enabled == true)
+    local wasVersion = s.version
+
+    local u = ns.networking.activeUsers[key] or {}
+    if state == "ONLINE" and wasEnabled and wasVersion == version then
+        s.seen = true
+        s.lastSeen = now
+        s._missing = nil
+        s._missingSince = nil
+
+        u.version = version
+        u.lastSeen = now
+        u.active = true
+
+        ns.db.addonStatus[key] = s
+        ns.networking.activeUsers[key] = u
+        return
+    end
+
     s.seen = true
     s.version = version
     s.lastSeen = now
@@ -39,7 +54,6 @@ function ADDON_STATUS.handle(sender, payload)
     if payload.prof2 ~= nil then s.prof2 = payload.prof2 end
     if payload.prof2Skill ~= nil then s.prof2Skill = payload.prof2Skill end
 
-    local u = ns.networking.activeUsers[key] or {}
     u.version = version
     u.lastSeen = now
 
@@ -53,7 +67,11 @@ function ADDON_STATUS.handle(sender, payload)
         s._lastOfflineAt = now
         u.active = false
     end
+
     ns.db.addonStatus[key] = s
     ns.networking.activeUsers[key] = u
-    if ns.ui and ns.ui.refresh then ns.ui.refresh() end    
+
+    if ns.ui and ns.ui.refresh then
+        ns.ui.refresh()
+    end
 end

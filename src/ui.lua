@@ -157,14 +157,14 @@ function ui.toggleWindow()
                 ns.ui.refresh()
             end
         end)
-        if ui.refreshTicker then
-            ui.refreshTicker:Cancel()
-        end
-        ui.refreshTicker = C_Timer.NewTicker(10, function()
-            if ui.frame.frame:IsShown() then
-                ui.refresh()
-            end
-        end)
+--        if ui.refreshTicker then
+--           ui.refreshTicker:Cancel()
+--        end
+--       ui.refreshTicker = C_Timer.NewTicker(10, function()
+--            if ui.frame.frame:IsShown() then
+--                ui.refresh()
+--            end
+--        end)
     end
 end
 
@@ -178,10 +178,6 @@ function ui.refresh()
         ui._refreshPending = false
 
         local showOnlineOnly = false
-
-        if IsInGuild and IsInGuild() and GuildRoster then
-            GuildRoster()
-        end
 
         ui.dataBuffer = ui.updateMemberList(showOnlineOnly)
 

@@ -115,15 +115,23 @@ function networking.initialize()
     -------------------------------------------------
 
     C_Timer.After(2, function()
-        local key = ns.globals.CHARACTERNAME
+        local meKey = (ns.helpers and ns.helpers.getKey and ns.helpers.getKey(ns.globals.CHARACTERNAME))
+            or ns.globals.CHARACTERNAME
         local now = GetTime()
+        local prevEnabled = false
+        local prevVersion = nil
+
+        if ns.db and ns.db.addonStatus and meKey and ns.db.addonStatus[meKey] then
+            prevEnabled = ns.db.addonStatus[meKey].enabled == true
+            prevVersion = ns.db.addonStatus[meKey].version
+        end
 
         local prof = { prof1="-", prof1Skill="-", prof2="-", prof2Skill="-" }
         if ns.profReady and ns.helpers.getPlayerProfessionColumns then
             prof = ns.helpers.getPlayerProfessionColumns()
         end
 
-        networking.activeUsers[key] = {
+        networking.activeUsers[meKey] = {
             version = ns.globals.ADDONVERSION,
             active = true,
             lastSeen = now,
@@ -134,15 +142,15 @@ function networking.initialize()
         }
 
         if ns.db and ns.db.addonStatus then
-            ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
-            ns.db.addonStatus[key].version = ns.globals.ADDONVERSION
-            ns.db.addonStatus[key].lastSeen = now
-            ns.db.addonStatus[key].seen = true
-            ns.db.addonStatus[key].enabled = true
-            ns.db.addonStatus[key].prof1 = prof.prof1
-            ns.db.addonStatus[key].prof1Skill = prof.prof1Skill
-            ns.db.addonStatus[key].prof2 = prof.prof2
-            ns.db.addonStatus[key].prof2Skill = prof.prof2Skill
+            ns.db.addonStatus[meKey] = ns.db.addonStatus[meKey] or {}
+            ns.db.addonStatus[meKey].version = ns.globals.ADDONVERSION
+            ns.db.addonStatus[meKey].lastSeen = now
+            ns.db.addonStatus[meKey].seen = true
+            ns.db.addonStatus[meKey].enabled = true
+            ns.db.addonStatus[meKey].prof1 = prof.prof1
+            ns.db.addonStatus[meKey].prof1Skill = prof.prof1Skill
+            ns.db.addonStatus[meKey].prof2 = prof.prof2
+            ns.db.addonStatus[meKey].prof2Skill = prof.prof2Skill
         end
 
         networking.SendToGuild("ADDON_STATUS", {
@@ -154,16 +162,21 @@ function networking.initialize()
             prof2Skill = prof.prof2Skill
         })
         if ns.guildLog and ns.guildLog.send and ns.db then
-            ns.db.profile = ns.db.profile or {}
-            local nowT = time()
-            local last = tonumber(ns.db.profile._lastEnableBroadcastAt or 0) or 0
-            local ENABLE_COOLDOWN = 60
+            local short = (ns.helpers and ns.helpers.getShort and ns.helpers.getShort(meKey))
+                or meKey
+                or ns.globals.CHARACTERNAME
+            local newVersion = ns.globals.ADDONVERSION or "?"
 
-            if (nowT - last) >= ENABLE_COOLDOWN then
-                ns.db.profile._lastEnableBroadcastAt = nowT
-                local meKey = ns.helpers.getKey(ns.globals.CHARACTERNAME)
-                local short = (ns.helpers.getShort(meKey) or meKey or ns.globals.CHARACTERNAME)
-                ns.guildLog.send(short .. " enabled the addon (v" .. (ns.globals.ADDONVERSION or "?") .. ")", { broadcast = true })
+            if not prevEnabled then
+                ns.guildLog.send(short .. " enabled the addon (v" .. newVersion .. ")", {
+                    kind = "info",
+                    broadcast = true
+                })
+            elseif prevVersion and prevVersion ~= newVersion then
+                ns.guildLog.send(short .. " updatded to addon version " .. newVersion, {
+                    kind = "sync",
+                    broadcast = true
+                })
             end
         end
     end)

@@ -12,5 +12,13 @@ function REQ_VERSION.handle(sender, payload)
     end
     lastReply[sender] = now
 
-    ns.networking.SendWhisper("RSP_VERSION", { version = ns.globals.ADDONVERSION }, sender)
+    local minVersion = ""
+    if GetAddOnMetadata then
+        minVersion = tostring(GetAddOnMetadata(addonName, "MinVersion") or "")
+    end
+
+    ns.networking.SendWhisper("RSP_VERSION", {
+        version = ns.globals.ADDONVERSION,
+        minVersion = minVersion
+    }, sender)
 end
