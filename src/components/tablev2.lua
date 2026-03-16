@@ -95,7 +95,6 @@ function tablev2:new(parent, metadata, data, row_height)
     obj.content:SetPoint("TOPLEFT", obj.scrollFrame, "TOPLEFT", 0, 0)
     obj.content:SetPoint("TOPRIGHT", obj.scrollFrame, "TOPRIGHT", 0, 0)
     obj.scrollFrame:SetScrollChild(obj.content)
-    obj.content:SetWidth(obj.scrollFrame:GetWidth())
 
     local scrollbar = obj.scrollFrame.ScrollBar
     if scrollbar then
@@ -105,25 +104,34 @@ function tablev2:new(parent, metadata, data, row_height)
     end
 
     obj._resizePending = false
+    obj._lastMeasuredWidth = 0
+
     obj.container:SetScript("OnSizeChanged", function()
         local newWidth = obj.container:GetWidth() or 0
         if newWidth <= 0 then return end
+
         if math.abs(newWidth - (obj._lastMeasuredWidth or 0)) < 4 then
             return
         end
-        
+
         obj._lastMeasuredWidth = newWidth
+
         if obj._resizePending then return end
         obj._resizePending = true
-        C_Timer.After(0.15, function()
+
+        C_Timer.After(0.1, function()
             obj._resizePending = false
-            if obj and obj.container and obj.container:IsShown() then
+            if obj and obj.container then
                 obj:refresh()
             end
         end)
     end)
+    C_Timer.After(0.05, function()
+        if obj and obj.container and (obj.container:GetWidth() or 0) > 0 then
+            obj:refresh()
+        end
+    end)
 
-    obj:refresh()
     return obj
 end
 
@@ -553,21 +561,36 @@ function tablev2:applySort()
     end)
 end
 
-function tablev2:refresh()
+function tablev2:refresh(forceRows)
+    if not self.container then return self end
+
+    local containerWidth = self.container:GetWidth() or 0
+    if containerWidth <= 0 then
+        return self
+    end
+    if self.content and self.scrollFrame then
+        local scrollWidth = self.scrollFrame:GetWidth() or 0
+        if scrollWidth > 0 then
+            self.content:SetWidth(scrollWidth)
+        end
+    end
+
     local oldWidth = self.totalColumnWidth or 0
     local oldCount = self._lastRowCount or 0
     self:calculateFieldWidths()
     self:applySort()
-    local widthChanged = (oldWidth ~= (self.totalColumnWidth or 0))
-    local rowCountChanged = (oldCount ~= #(self.data or {}))
+    local newWidth = self.totalColumnWidth or 0
+    local newCount = #(self.data or {})
+    local widthChanged = (oldWidth ~= newWidth)
+    local rowCountChanged = (oldCount ~= newCount)
+    local needsRows = forceRows or widthChanged or rowCountChanged or not self.rows or #self.rows == 0
 
     if not self.header or widthChanged then
         self:updateHeader()
     end
-    if widthChanged or rowCountChanged or not self.rows or #self.rows == 0 then
-        self:updateRows()
-    else
+    if needsRows then
         self:updateRows()
     end
-    self._lastRowCount = #(self.data or {})
+    self._lastRowCount = newCount
+    return self
 end

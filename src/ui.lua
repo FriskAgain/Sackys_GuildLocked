@@ -57,7 +57,7 @@ function ui.initialize()
             ns.ui.toggleGuildLog()
         end
     end)
-    -- Hide if no permissions
+
     if not canSeeLog() then
         logBtn:Hide()
     end
@@ -68,7 +68,6 @@ function ui.initialize()
     memberlist:SetPoint("BOTTOMRIGHT", ui.frame.frame, "BOTTOMRIGHT", -12, 12)
 
     local metadata = {
-
         sort = {
             col1 = { field = "online", order = "desc" },
             col2 = { field = "name", order = "asc" }
@@ -89,7 +88,7 @@ function ui.initialize()
         col3 = {
             header = "Profession 1",
             field = "prof1",
-            minwidth = 120
+            minWidth = 120
         },
 
         col4 = {
@@ -101,7 +100,7 @@ function ui.initialize()
         col5 = {
             header = "Profession 2",
             field = "prof2",
-            minwidth = 120
+            minWidth = 120
         },
 
         col6 = {
@@ -115,7 +114,6 @@ function ui.initialize()
             field = "addon_active",
             width = 110
         }
-
     }
 
     local showOnlineOnly = false
@@ -123,22 +121,28 @@ function ui.initialize()
     if IsInGuild and IsInGuild() and GuildRoster then
         GuildRoster()
     end
-
+    ui._memberlistFrame = memberlist
+    ui._memberMetadata = metadata
+    ui._tableBuilt = false
     ui.dataBuffer = ns.helpers.getGuildMemberData(showOnlineOnly)
+end
+
+function ui.buildMemberTable()
+    if ui._tableBuilt then return true end
+    if not ui._memberlistFrame or not ui._memberMetadata then return false end
+    local w = ui._memberlistFrame:GetWidth() or 0
+    if w <= 0 then
+        return false
+    end
     ui.memberTable = ns.components.tablev2:new(
-        memberlist,
-        metadata,
+        ui._memberlistFrame,
+        ui._memberMetadata,
         {},
         20
     )
     ui.frame.frame.memberTable = ui.memberTable
-    C_Timer.After(0.5, function()
-        if ns.ui and ns.ui.refresh then
-            ns.ui.refresh()
-        end
-    end)
-    ns.networking.SendToGuild("REQ_VERSION", {})
-
+    ui._tableBuilt = true
+    return true
 end
 
 function ui.toggleWindow()
@@ -152,19 +156,33 @@ function ui.toggleWindow()
         ui.frame.frame:Show()
         ui.frame.frame:Raise()
 
-        C_Timer.After(0.1, function()
-            if ns.ui and ns.ui.refresh then
-                ns.ui.refresh()
+        local function tryBuildAndRefresh(attempt)
+            attempt = attempt or 1
+            if ns.ui and ns.ui.buildMemberTable and not ns.ui.memberTable then
+                ns.ui.buildMemberTable()
             end
+            if ns.ui and ns.ui.memberTable and ns.ui.memberTable.container then
+                local w = ns.ui.memberTable.container:GetWidth() or 0
+                if w > 0 then
+                    if ns.ui.refresh then
+                        ns.ui.refresh()
+                    end
+                    return
+                end
+            end
+            if attempt < 10 then
+                C_Timer.After(0.1, function()
+                    tryBuildAndRefresh(attempt + 1)
+                end)
+            else
+                if ns.ui and ns.ui.refresh then
+                    ns.ui.refresh()
+                end
+            end
+        end
+        C_Timer.After(0.05, function()
+            tryBuildAndRefresh(1)
         end)
---        if ui.refreshTicker then
---           ui.refreshTicker:Cancel()
---        end
---       ui.refreshTicker = C_Timer.NewTicker(10, function()
---            if ui.frame.frame:IsShown() then
---                ui.refresh()
---            end
---        end)
     end
 end
 
@@ -208,9 +226,25 @@ function ui.refresh()
             ns.networking.SendToGuild("REQ_VERSION", {})
         end
 
-        if ui.memberTable then
-            ui.memberTable.data = ui.dataBuffer
-            ui.memberTable:refresh()
+        if not ui.memberTable and ui.buildMemberTable then
+            ui.buildMemberTable()
+        end
+        if ui.memberTable and ui.memberTable.container then
+            local w = ui.memberTable.container:GetWidth() or 0
+            if w > 0 then
+                ui.memberTable.data = ui.dataBuffer or {}
+                ui.memberTable:refresh(true)
+            else
+                C_Timer.After(0.1, function()
+                    if ns.ui and ns.ui.memberTable and ns.ui.memberTable.container then
+                        local retryW = ns.ui.memberTable.container:GetWidth() or 0
+                        if retryW > 0 then
+                            ns.ui.memberTable.data = ns.ui.dataBuffer or {}
+                            ns.ui.memberTable:refresh(true)
+                        end
+                    end
+                end)
+            end
         end
 
         if ui._officerLogBtn and ns.helpers and ns.helpers.playerCanViewGuildLog then
