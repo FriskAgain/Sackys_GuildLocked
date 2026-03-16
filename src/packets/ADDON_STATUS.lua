@@ -22,7 +22,7 @@ function ADDON_STATUS.handle(sender, payload)
     ns.networking.activeUsers = ns.networking.activeUsers or {}
 
     local state   = payload.state
-    local version = safeVal(payload.version, "?")
+    local version = safeVal(payload.version, "")
     local now     = GetTime()
 
     local s = ns.db.addonStatus[key] or {}

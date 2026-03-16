@@ -6,7 +6,6 @@ local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_LOGOUT")
-frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 frame:RegisterEvent("AUCTION_HOUSE_SHOW")
 frame:RegisterEvent("TRADE_SHOW")
 frame:RegisterEvent("TRADE_ACCEPT_UPDATE")
@@ -132,13 +131,6 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 version = ver
             })
         end 
-        return
-    
-    elseif event == "PLAYER_REGEN_ENABLED" then
-        if ns.ui and ns.ui._closeGuildLogAfterCombat and ns.ui.guildLogFrame and ns.ui.guildLogFrame.frame then
-            ns.ui._closeGuildLogAfterCombat = false
-            ns.ui.guildLogFrame.frame:Hide()
-        end
         return
 
     elseif event == "GUILD_ROSTER_UPDATE" then

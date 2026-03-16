@@ -173,7 +173,7 @@ function networking.initialize()
                     broadcast = true
                 })
             elseif prevVersion and prevVersion ~= newVersion then
-                ns.guildLog.send(short .. " updatded to addon version " .. newVersion, {
+                ns.guildLog.send(short .. " updated to addon version " .. newVersion, {
                     kind = "sync",
                     broadcast = true
                 })

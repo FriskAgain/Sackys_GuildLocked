@@ -131,6 +131,12 @@ function ui.buildMemberTable()
     if ui._tableBuilt then return true end
     if not ui._memberlistFrame or not ui._memberMetadata then return false end
     local w = ui._memberlistFrame:GetWidth() or 0
+    if w <= 0 and ui.frame and ui.frame.frame then
+        ui._memberlistFrame:ClearAllPoints()
+        ui._memberlistFrame:SetPoint("TOPLEFT", ui.frame.frame, "TOPLEFT", 12, -58)
+        ui._memberlistFrame:SetPoint("BOTTOMRIGHT", ui.frame.frame, "BOTTOMRIGHT", -12, 12)
+        w = ui._memberlistFrame:GetWidth() or 0
+    end
     if w <= 0 then
         return false
     end
@@ -140,6 +146,7 @@ function ui.buildMemberTable()
         {},
         20
     )
+
     ui.frame.frame.memberTable = ui.memberTable
     ui._tableBuilt = true
     return true
@@ -170,12 +177,12 @@ function ui.toggleWindow()
                     return
                 end
             end
-            if attempt < 10 then
+            if attempt < 20 then
                 C_Timer.After(0.1, function()
                     tryBuildAndRefresh(attempt + 1)
                 end)
             else
-                if ns.ui and ns.ui.refresh then
+                if ns.ui.refresh then
                     ns.ui.refresh()
                 end
             end
@@ -335,15 +342,14 @@ function ui.toggleGuildLog()
     end
     local frame = ui.guildLogFrame.frame
     if frame:IsShown() then
+        frame:Hide()
+    else
         if InCombatLockdown and InCombatLockdown() then
-            ui._closeGuildLogAfterCombat = true
             if ns.log and ns.log.info then
-                ns.log.info("Will close Officer Log after combat.")
+                ns.log.info("Cannot open Officer Log during combat.")
             end
             return
         end
-        frame:Hide()
-    else
         frame:Show()
         frame:Raise()
         if ui.updateGuildLog then
