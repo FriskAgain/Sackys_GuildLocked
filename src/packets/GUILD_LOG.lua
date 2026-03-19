@@ -12,6 +12,7 @@ function GUILD_LOG.handle(sender, payload)
         time = payload.time,
         sender = payload.sender or sender,
         message = payload.message,
-        kind = payload.kind or "info"
+        kind = payload.kind or "info",
+        eventId = payload.eventId or nil,
     })
 end

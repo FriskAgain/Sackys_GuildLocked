@@ -1,11 +1,31 @@
 local addonName, ns = ...
 local MAX_SAFE_MSG = 3500
 local networking = {
-    PREFIX = "SGLK02"
+    PREFIX = "SGLK03"
 }
 ns.networking = networking
 
 networking.activeUsers = networking.activeUsers or {}
+
+function formatDuration(seconds)
+    seconds = math.max(0, tonumber(seconds) or 0)
+    local days = math.floor(seconds / 86400)
+    seconds = seconds % 86400
+    local hours = math.floor(seconds / 3600)
+    seconds = seconds % 3600
+    local mins = math.floor(seconds / 60)
+    local secs = seconds % 60
+
+    if days > 0 then
+        return string.format("%dd %dh %dm", days, hours, mins)
+    elseif hours > 0 then
+        return string.format("%dh %dm", hours, mins)
+    elseif mins > 0 then
+        return string.format("%dm %ds", mins, secs)
+    else
+        return string.format("%ds", secs)
+    end
+end
 
 
 function networking.initialize()
@@ -117,19 +137,22 @@ function networking.initialize()
     C_Timer.After(2, function()
         local meKey = (ns.helpers and ns.helpers.getKey and ns.helpers.getKey(ns.globals.CHARACTERNAME))
             or ns.globals.CHARACTERNAME
-        local now = GetTime()
+        local now = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
         local prevEnabled = false
         local prevVersion = nil
+        local preOnline = false
 
         if ns.db and ns.db.addonStatus and meKey and ns.db.addonStatus[meKey] then
             prevEnabled = ns.db.addonStatus[meKey].enabled == true
             prevVersion = ns.db.addonStatus[meKey].version
+            prevOnline = ns.db.addonStatus[meKey].online == true
         end
 
         local prof = { prof1="-", prof1Skill="-", prof2="-", prof2Skill="-" }
         if ns.profReady and ns.helpers.getPlayerProfessionColumns then
             prof = ns.helpers.getPlayerProfessionColumns()
         end
+        local money = (ns.helpers and ns.helpers.getPlayerMoney and ns.helpers.getPlayerMoney()) or 0
 
         networking.activeUsers[meKey] = {
             version = ns.globals.ADDONVERSION,
@@ -138,19 +161,33 @@ function networking.initialize()
             prof1 = prof.prof1,
             prof1Skill = prof.prof1Skill,
             prof2 = prof.prof2,
-            prof2Skill = prof.prof2Skill
+            prof2Skill = prof.prof2Skill,
+            money = money
         }
 
         if ns.db and ns.db.addonStatus then
             ns.db.addonStatus[meKey] = ns.db.addonStatus[meKey] or {}
-            ns.db.addonStatus[meKey].version = ns.globals.ADDONVERSION
-            ns.db.addonStatus[meKey].lastSeen = now
-            ns.db.addonStatus[meKey].seen = true
-            ns.db.addonStatus[meKey].enabled = true
-            ns.db.addonStatus[meKey].prof1 = prof.prof1
-            ns.db.addonStatus[meKey].prof1Skill = prof.prof1Skill
-            ns.db.addonStatus[meKey].prof2 = prof.prof2
-            ns.db.addonStatus[meKey].prof2Skill = prof.prof2Skill
+            local s = ns.db.addonStatus[meKey]
+            s.version = ns.globals.ADDONVERSION
+            s.lastSeen = now
+            s.seen = true
+            s.online = true
+            if not prevOnline then
+                s.onlineAt = now
+            end
+            s.enabled = true
+            if not prevEnabled then
+                s.enabledAt = now
+            end
+            s.prof1 = prof.prof1
+            s.prof1Skill = prof.prof1Skill
+            s.prof2 = prof.prof2
+            s.prof2Skill = prof.prof2Skill
+            local oldMoney = tonumber(s.money) or money
+            s.prevMoney = tonumber(s.money) or money
+            s.money = money
+            s.moneyDelta = money - oldMoney
+            s.moneyUpdatedAt = now
         end
 
         networking.SendToGuild("ADDON_STATUS", {
@@ -159,7 +196,8 @@ function networking.initialize()
             prof1 = prof.prof1,
             prof1Skill = prof.prof1Skill,
             prof2 = prof.prof2,
-            prof2Skill = prof.prof2Skill
+            prof2Skill = prof.prof2Skill,
+            money = money
         })
         if ns.guildLog and ns.guildLog.send and ns.db then
             local short = (ns.helpers and ns.helpers.getShort and ns.helpers.getShort(meKey))
@@ -170,12 +208,14 @@ function networking.initialize()
             if not prevEnabled then
                 ns.guildLog.send(short .. " enabled the addon (v" .. newVersion .. ")", {
                     kind = "info",
-                    broadcast = true
+                    broadcast = true,
+                    eventId = "enabled:" .. tostring(meKey) .. ":" .. tostring(newVersion)
                 })
             elseif prevVersion and prevVersion ~= newVersion then
                 ns.guildLog.send(short .. " updated to addon version " .. newVersion, {
                     kind = "sync",
-                    broadcast = true
+                    broadcast = true,
+                    eventId = "update:" .. tostring(key) .. ":" .. tostring(version)
                 })
             end
         end
@@ -216,38 +256,57 @@ function networking.initialize()
     -------------------------------------------------
 
     C_Timer.NewTicker(30, function()
-        local now = GetTime()
-        local key = ns.globals and ns.globals.CHARACTERNAME
+        local nowSession = GetTime()
+        local nowStamp = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
+        local key = (ns.helpers and ns.helpers.getKey and ns.globals and ns.globals.CHARACTERNAME)
+            and ns.helpers.getKey(ns.globals.CHARACTERNAME) or nil
         if not key then return end
 
         local prof = { prof1="-", prof1Skill="-", prof2="-", prof2Skill="-" }
         if ns.profReady and ns.helpers and ns.helpers.getPlayerProfessionColumns then
             prof = ns.helpers.getPlayerProfessionColumns()
         end
+        local money = (ns.helpers and ns.helpers.getPlayerMoney and ns.helpers.getPlayerMoney()) or 0
 
         -- Update Live Cache
         networking.activeUsers[key] = networking.activeUsers[key] or {}
         local u = networking.activeUsers[key]
         u.version = ns.globals.ADDONVERSION
         u.active = true
-        u.lastSeen = now
+        u.lastSeen = nowSession
         u.prof1 = prof.prof1
         u.prof1Skill = prof.prof1Skill
         u.prof2 = prof.prof2
         u.prof2Skill = prof.prof2Skill
+        u.money = money
 
         -- Update DB snapshot
         if ns.db and ns.db.addonStatus then
             ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
             local s = ns.db.addonStatus[key]
+            local wasEnabled = (s.enabled == true)
+            local wasOnline = (s.online == true)
             s.version = ns.globals.ADDONVERSION
-            s.lastSeen = now
+            s.lastSeen = nowStamp
             s.seen = true
+            s.online = true
+            if not wasOnline then
+                s.onlineAt = nowStamp
+            end
             s.enabled = true
+            if not wasEnabled then
+                s.enabledAt = nowStamp
+            end
+            s.active = true
             s.prof1 = prof.prof1
             s.prof1Skill = prof.prof1Skill
             s.prof2 = prof.prof2
             s.prof2Skill = prof.prof2Skill
+            local oldMoney = tonumber(s.money) or money
+            s.prevMoney = tonumber(s.money) or money
+            s.money = money
+            s.moneyDelta = money - oldMoney
+            s.moneyUpdatedAt = nowStamp
         end
 
         networking.SendToGuild("ADDON_STATUS", {
@@ -256,7 +315,8 @@ function networking.initialize()
             prof1 = prof.prof1,
             prof1Skill = prof.prof1Skill,
             prof2 = prof.prof2,
-            prof2Skill = prof.prof2Skill
+            prof2Skill = prof.prof2Skill,
+            money = money
         })
     end)
 
@@ -273,25 +333,27 @@ function networking.initialize()
         local onlineSet = networking.onlineSet
         if not onlineSet then return end
 
-        local me = ns.helpers.getKey(ns.globals and ns.globals.CHARACTERNAME)
-        local now = GetTime()
+        local me = (ns.helpers and ns.helpers.getKey and ns.globals and ns.globals.CHARACTERNAME)
+            and ns.helpers.getKey(ns.globals.CHARACTERNAME) or nil
+        local nowSession = GetTime()
+        local nowStamp = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
         local HEARTBEAT = 30
-        local GRACE = 120 -- Must be > HEARTBEAT (30s) | Give room for lag + login + reload
+        local GRACE = 10
         local MISS_STRIKES = 2
 
-        for key,_ in pairs (onlineSet) do
+        for key, _ in pairs (onlineSet) do
             if key ~= me then
                 local s = ns.db.addonStatus[key]
                 if s and s.seen == true then
                     if not s._onlineSince then
-                        s._onlineSince = now
+                        s._onlineSince = nowSession
                         s._missStrikes = 0
                         ns.db.addonStatus[key] = s
                     else
                         local u = networking.activeUsers[key]
-                        local lastSeen = (u and u.lastSeen) or s.lastSeen or 0
-                        local sessionAge = now - (s._onlineSince or now)
-                        local missing = (lastSeen == 0) or ((now - lastSeen) > GRACE)
+                        local lastSeen = (u and u.lastSeen) or 0
+                        local sessionAge = nowSession - (s._onlineSince or nowSession)
+                        local missing = (lastSeen == 0) or ((nowSession - lastSeen) > GRACE)
 
                         if sessionAge < GRACE then
                             s._missStrikes = 0
@@ -301,23 +363,52 @@ function networking.initialize()
                                 if s._missStrikes >= MISS_STRIKES then
                                     if not s._missing then
                                         s._missing = true
-                                        s._missingSince = now
+                                        s._missingSince = nowStamp
+                                        if networking.activeUsers[key] then
+                                            networking.activeUsers[key].active = false
+                                        end
+                                        s.active = false
                                         if s.enabled ~= false then
                                             s.enabled = false
+                                            s.disabledAt = nowStamp
                                         end
-                                        if ns.guildLog and ns.guildLog.send then
-                                            ns.guildLog.send((ns.helpers.getShort(key) or key) .. " is online without SGLK enabled", { kind = "warn", broadcast = true })
+                                        s.missingMoneyBaseline = tonumber(s.money) or 0
+                                        s.missingMoneyAt = nowStamp
+                                        if s.online ~= true then
+                                            s.online = true
+                                            s.onlineAt = s.onlineAt or nowStamp
                                         end
+                                        local missingEventId = "missing:" .. tostring(key)
+                                        s._missingEventId = missingEventId
+                                        if ns.guildLog and ns.guildLog.clearSeenEvent then
+                                            ns.guildLog.clearSeenEvent("reenabled:" .. tostring(key))
+                                        end
+                                        ns.guildLog.send((ns.helpers.getShort(key) or key) .. " is online without SGLK enabled", {
+                                            kind = "warn",
+                                            broadcast = true,
+                                            eventId = "missing:" .. tostring(key)
+                                        })
                                     end
                                 end
                             else
                                 s._missStrikes = 0
+                                local wasMissing = (s._missing == true)
+                                local disabledAt = s.disabledAt
                                 if s._missing then
                                     s._missing = nil
                                     s._missingSince = nil
                                 end
+                                if networking.activeUsers[key] then
+                                    networking.activeUsers[key].active = true
+                                end
+                                s.active = true
+                                if s.online ~= true then
+                                    s.online = true
+                                    s.onlineAt = nowStamp
+                                end
                                 if s.enabled ~= true then
                                     s.enabled = true
+                                    s.enabledAt = nowStamp
                                 end
                             end
                         end
@@ -326,13 +417,15 @@ function networking.initialize()
                 end
             end
         end
-        -- Clean up if someone goes offline. clears session flags so next login is clean
         for key, s in pairs(ns.db.addonStatus) do
             if type(s) == "table" and s._onlineSince and not onlineSet[key] then
                 s._onlineSince = nil
                 s._missing = nil
                 s._missingSince = nil
                 s._missStrikes = nil
+                s.online = false
+                s.active = false
+                s.offlineAt = nowStamp
                 ns.db.addonStatus[key] = s
             end
         end
@@ -352,7 +445,7 @@ function networking.ReceivedMessage(msg, distribution, sender)
         local sKey = (ns.helpers.getKey and ns.helpers.getKey and ns.helpers.getKey(sShort)) or sShort
 
         if distribution == "WHISPER" and not (ns.helpers.isGuildMember(sShort) or ns.helpers.isGuildMember(sKey)) then
-            ns.log.debug("Ignored whisper from non-guild membert: " .. tostring(sender))
+            ns.log.debug("Ignored whisper from non-guild member: " .. tostring(sender))
             return
         end
     end

@@ -5,11 +5,24 @@ ns.guildLog = ns.guildLog or {}
 local MAX_ENTRIES = 200
 local MAX_SEEN = 400
 
+local function realmKey()
+    return GetRealmName() or "UnknownRealm"
+end
+
 local function ensureDB()
     if not ns.db then return false end
-    ns.db.guildLog = ns.db.guildLog or {}
 
-    ns.db.guildLogMeta = ns.db.guildLogMeta or {}
+    ns.db.guildLogsByRealm = ns.db.guildLogsByRealm or {}
+    ns.db.guildLogMetaByRealm = ns.db.guildLogMetaByRealm or {}
+
+    local rk = realmKey()
+
+    ns.db.guildLogsByRealm[rk] = ns.db.guildLogsByRealm[rk] or {}
+    ns.db.guildLogMetaByRealm[rk] = ns.db.guildLogMetaByRealm[rk] or {}
+
+    ns.db.guildLog = ns.db.guildLogsByRealm[rk]
+    ns.db.guildLogMeta = ns.db.guildLogMetaByRealm[rk]
+
     ns.db.guildLogMeta._seen = ns.db.guildLogMeta._seen or {}
     ns.db.guildLogMeta._seenOrder = ns.db.guildLogMeta._seenOrder or {}
 
@@ -17,6 +30,9 @@ local function ensureDB()
 end
 
 local function makeId(entry)
+    if entry.eventId and entry.eventId ~= "" then
+        return "event:" .. tostring(entry.eventId)
+    end
     local sender = tostring(entry.sender or "?")
     local t = tonumber(entry.time) or 0
     local msg = tostring(entry.message or "")
@@ -37,7 +53,9 @@ local function seenCheckAndRemember(id)
 
     while #order > MAX_SEEN do
         local old = table.remove(order, 1)
-        if old then seen[old] = nil end
+        if old then
+            seen[old] = nil
+        end
     end
     return false
 end
@@ -61,10 +79,11 @@ function ns.guildLog.send(message, opts)
     opts = opts or {}
 
     local entry = {
-        message = message,
+        message = tostring(message),
         sender = (ns.globals and ns.globals.CHARACTERNAME) or UnitName("player") or "?",
         time = time(),
-        kind = opts.kind or "info"
+        kind = opts.kind or "info",
+        eventId = opts.eventId or nil,
     }
 
     local id = makeId(entry)
@@ -91,8 +110,9 @@ function ns.guildLog.receive(entry)
     local clean = {
         time = entry.time or time(),
         sender = entry.sender or "?",
-        message = entry.message,
-        kind = entry.kind or "info"
+        message = tostring(entry.message or ""),
+        kind = entry.kind or "info",
+        eventId = entry.eventId or nil,
     }
     local id = makeId(clean)
     if seenCheckAndRemember(id) then
@@ -104,6 +124,27 @@ function ns.guildLog.receive(entry)
         local ok, err = pcall(ns.ui.updateGuildLog)
         if not ok and ns.log and ns.log.error then
             ns.log.error("updateGuildLog failed: " .. tostring(err))
+        end
+    end
+end
+
+function ns.guildLog.clearSeenEvent(eventId)
+    if not eventId or eventId == "" then return end
+    if not ensureDB() then return end
+
+    local id = "event:" .. tostring(eventId)
+    local meta = ns.db.guildLogMeta
+    local seen = meta and meta._seen
+    local order = meta and meta._seenOrder
+    
+    if seen then
+        seen[id] = nil
+    end
+    if order then
+        for i = #order, 1, -1 do
+            if order[i] == id then
+                table.remove(order, 1)
+            end
         end
     end
 end

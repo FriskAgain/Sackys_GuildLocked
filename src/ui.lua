@@ -381,22 +381,42 @@ function ui.updateMemberList(showOnlineOnly)
         end
         member.version = v
 
-        -- Addon Active:
-        -- Yes if we have a live heartbeat,
-        -- else Yes if DB says enabled=true,
-        -- else No.
         local enabled = false
-        if live and live.active == true then
+
+        local online = (member.online == "Yes")
+        local savedMissing = (saved and saved._missing == true)
+        local liveLastSeen = live and live.lastSeen or nil
+        local liveRecent = (liveLastSeen and ((GetTime() - liveLastSeen) <= 120)) or false
+        local liveActive = (live and live.active == true)
+        local savedActive = (saved and saved.active == true)
+
+        if not online then
+            enabled = false
+        elseif savedMissing then
+            enabled = false
+        elseif liveRecent and liveActive then
             enabled = true
-        elseif saved and saved.enabled == true then
+        elseif savedActive and not savedMissing then
             enabled = true
+        else
+            enabled = false
+        end
+        if key == "Frìaclaw-Spineshatter" then
+            ns.log.info(
+                "DEBUG key=" .. tostring(key) ..
+                " online=" .. tostring(online) ..
+                " savedMissing=" .. tostring(savedMissing) ..
+                " liveRecent=" .. tostring(liveRecent) ..
+                " liveActive=" .. tostring(liveActive) ..
+                " savedActive=" .. tostring(savedActive) ..
+                " final=" .. tostring(enabled)
+            )
         end
         member.addon_active = enabled
 
         -- -----------------------------
         -- Profession polling
         -- -----------------------------
-        local online = (member.online == "Yes")
 
         local hasAddon = saved and saved.seen == true and saved.enabled ~= false
 

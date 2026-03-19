@@ -26,6 +26,13 @@ local function buildPrimaryNames()
     return map
 end
 
+function helpers.nowStamp()
+    if GetServerTime then
+        return GetServerTime()
+    end
+    return time()
+end
+
 function helpers.getKey(name)
     if not name or name == "" then return nil end
     if name:find("-", 1, true) then
@@ -41,6 +48,32 @@ end
 function helpers.getShort(name)
     if not name or name == "" then return nil end
     return Ambiguate(name, "none")
+end
+
+function helpers.getPlayerMoney()
+    local copper = GetMoney()
+    if type(copper) ~= "number" then
+        return 0
+    end
+    return copper
+end
+
+function helpers.formatMoneyDelta(copper)
+    copper = tonumber(copper) or 0
+
+    local sign = ""
+    if copper > 0 then
+        sign = "+"
+    elseif copper < 0 then
+        sign = "-"
+        copper = math.abs(copper)
+    end
+
+    local gold = math.floor(copper / 10000)
+    local silver = math.floor((copper % 10000) / 100)
+    local copperOnly = copper % 100
+
+    return string.format("%s%dg %ds %dc", sign, gold, silver, copperOnly)
 end
 
 function helpers.isGuildMember(target)
@@ -67,6 +100,7 @@ function helpers.getGuildMemberData(onlineOnly)
     end
 
     ns.db.chars = ns.db.chars or {}
+    ns.db.addonStatus = ns.db.addonStatus or {}
 
     local numMembers = GetNumGuildMembers() or 0
 
@@ -75,16 +109,26 @@ function helpers.getGuildMemberData(onlineOnly)
         if name and name ~= "" then
             local key = helpers.getKey(name) or name
             local charData = ns.db.chars[key]
+            local statusData = ns.db.addonStatus[key]
 
             if not onlineOnly or online then
+                local money = (statusData and tonumber(statusData.money)) or 0
+                local moneyDelta = (statusData and tonumber(statusData.moneyDelta)) or 0
+
                 table.insert(members, {
                     key = key,
                     name = helpers.getShort(key) or name or key,
                     online = online and "Yes" or "No",
+
                     prof1 = (charData and charData.prof1) or "-",
                     prof1Skill = (charData and charData.prof1Skill) or "-",
                     prof2 = (charData and charData.prof2) or "-",
                     prof2Skill = (charData and charData.prof2Skill) or "-",
+
+                    money = money,
+                    moneyText = (helpers.formatMoney and helpers.formatMoney(money)) or "0g 0s 0c",
+                    moneyDelta = moneyDelta,
+                    moneyDeltaText = (helpers.formatMoneyDelta and helpers.formatMoneyDelta(moneyDelta)) or "0g 0s 0c",
                 })
             end
         end

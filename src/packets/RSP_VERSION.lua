@@ -46,10 +46,24 @@ function RSP_VERSION.handle(sender, payload)
     local me = tostring(ns.globals and ns.globals.ADDONVERSION or "")
 
     local short = (ns.helpers and ns.helpers.getShort and ns.helpers.getShort(sender)) or sender
+    local key = (ns.helpers and ns.helpers.getKey and sender and ns.helpers.getKey(sender)) or sender
 
     if ns.ui and ns.ui.dataBuffer then
         ns.ui.updateFieldValue(short, "version", remote ~= "" and remote or "?")
-        ns.ui.updateFieldValue(short, "addon_active", true)
+    end
+
+    if ns.db then
+        ns.db.addonStatus = ns.db.addonStatus or {}
+        ns.db.addonStatus[key] = ns.db.addonStatus[key] or {}
+
+        local s = ns.db.addonStatus[key]
+        s.seen = true
+        if remote ~= "" then
+            s.version = remote
+        end
+        if remoteMin ~= "" then
+            s.minVersion = remoteMin
+        end
     end
 
     if remote ~= "" and me ~= "" and isNewerVersion(remote, me) then

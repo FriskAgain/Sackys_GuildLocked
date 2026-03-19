@@ -114,15 +114,19 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         end
 
         local ver = ns.globals and ns.globals.ADDONVERSION or "?"
-        local meKey = (ns.helpers and ns.helpers.getKey and ns.globals and ns.globals.CHARACTERNAME) and ns.helpers.getKey(ns.globals.CHARACTERNAME) or nil
+        local meKey = (ns.helpers and ns.helpers.getKey and ns.globals and ns.globals.CHARACTERNAME)
+            and ns.helpers.getKey(ns.globals.CHARACTERNAME) or nil
+        local now = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
 
         if meKey and ns.db and ns.db.addonStatus then
             ns.db.addonStatus[meKey] = ns.db.addonStatus[meKey] or {}
             local s = ns.db.addonStatus[meKey]
             s.seen = true
             s.version = ver
-            s.lastSeen = GetTime()
-            s._lastOfflineAt = GetTime()
+            s.lastSeen = now
+            s.offlineAt = now
+            s.online = false
+            s._lastOfflineAt = now
         end
 
         if ns.networking and ns.networking.SendToGuild and ns.networking.CommHandler then
@@ -243,6 +247,25 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
 
     elseif event == "MAIL_SEND_INFO_UPDATE" then
         ns.restrictions.sendmail.validateRecipient()
+
+    elseif event == "PLAYER_MONEY" then
+        if ns.helpers and ns.helpers.getPlayerMoney and ns.helpers.getKey and ns.globals and ns.globals.CHARACTERNAME and ns.db then
+            local meKey = ns.helpers.getKey(ns.globals.CHARACTERNAME)
+            local nowStamp = (ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
+            local money = ns.helpers.getPlayerMoney()
+
+            ns.db.addonStatus = ns.db.addonStatus or {}
+            ns.db.addonStatus[meKey] = ns.db.addonStatus[meKey] or {}
+
+            local s = ns.db.addonStatus[meKey]
+            local oldMoney = tonumber(s.money) or money
+
+            s.prevMoney = tonumber(s.money) or money
+            s.money = money
+            s.moneyDelta = money - oldMoney
+            s.moneyUpdatedAt = nowStamp
+        end
+        return
 
     elseif event == "PLAYER_DEAD" then
         local tx = {
