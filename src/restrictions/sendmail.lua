@@ -2,6 +2,7 @@ local addonName, ns = ...
 local sendmail = {}
 if not ns.restrictions then ns.restrictions = {} end
 ns.restrictions.sendmail = sendmail
+sendmail._lastBlockedLog = sendmail._lastBlockedLog or {}
 
 function sendmail.initialize()
     sendmail.hookMailInput()
@@ -49,6 +50,32 @@ function sendmail.hookMailInput()
     end
 end
 
+function sendmail.logBlockedAltMail(meKey, targetKey)
+    if not meKey or not targetKey then return end
+
+    local now = time()
+    local id = "mail-alt-send:" .. tostring(meKey) .. ":" .. tostring(targetKey)
+    local last = sendmail._lastBlockedLog[id] or 0
+    if (now - last) < 5 then
+        return
+    end
+    sendmail._lastBlockedLog[id] = now
+
+    local meShort = (ns.helpers and ns.helpers.getShort and ns.helpers.getShort(meKey)) or meKey
+    local targetShort = (ns.helpers and ns.helpers.getShort and ns.helpers.getShort(targetKey)) or targetKey
+
+    if ns.guildLog and ns.guildLog.send then
+        ns.guildLog.send(
+            ("%s attempted to send mail to linked alt %s"):format(meShort, targetShort),
+            {
+                kind = "blocked",
+                broadcast = true,
+                eventId = id,
+            }
+        )
+    end
+end
+
 function sendmail.validateRecipient()
     if not SendMailNameEditBox or not SendMailMailButton then return end
     SendMailMailButton:Disable()
@@ -60,10 +87,20 @@ function sendmail.validateRecipient()
     local shortName = true
     local isGuildMember = ns.helpers.isGuildMember(target, shortName) or ns.helpers.isGuildMember(target, not shortName)
 
-    -- Prüfe, ob überhaupt etwas verschickt werden soll
+    local meKey = ns.helpers and ns.helpers.getPlayerKey and ns.helpers.getPlayerKey()
+    local targetKey = ns.helpers and ns.helpers.getKey and ns.helpers.getKey(target) or target
+    local isOwnAlt = false
+
+    if ns.helpers and ns.helpers.isOwnAltPair and meKey and targetKey then
+        isOwnAlt = ns.helpers.isOwnAltPair(meKey, targetKey)
+    end
+
     local hasItem = false
     for i = 1, ATTACHMENTS_MAX_SEND do
-        if GetSendMailItem(i) then hasItem = true break end
+        if GetSendMailItem(i) then
+            hasItem = true
+            break
+        end
     end
     local subject = SendMailSubjectEditBox and SendMailSubjectEditBox:GetText() or ""
     local body = SendMailBodyEditBox and SendMailBodyEditBox:GetText() or ""
@@ -73,8 +110,14 @@ function sendmail.validateRecipient()
 
     local hasMoney = (gold > 0 or silver > 0 or copper > 0)
     local hasSubject = subject ~= ""
+    local hasContent = hasItem or hasMoney or (body ~= "")
 
-    local hasContent = hasItem or hasMoney
+    if isOwnAlt then
+        SendMailNameEditBox:SetTextColor(0.9, 0.3, 0.3)
+        SendMailMailButton:Disable()
+        sendmail.logBlockedAltMail(meKey, targetKey)
+        return
+    end
 
     if isGuildMember then
         SendMailNameEditBox:SetTextColor(0.3, 0.9, 0.3)

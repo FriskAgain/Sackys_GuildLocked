@@ -348,6 +348,9 @@ function tablev2:createCell(row, x, width, value, field, item)
 
             fs:SetText(icon .. text)
             fs:SetTextColor(r, g, b)
+        elseif field.field == "addon_active" and text =="—" then
+            fs:SetText(text)
+            fs:SetTextColor(0.6, 0.6, 0.6)
         else
             fs:SetText(text)
             fs:SetTextColor(1, 1, 1)

@@ -63,6 +63,20 @@ function ui.initialize()
     end
     ui._officerLogBtn = logBtn
 
+    local altBtn = CreateFrame("Button", nil, ui.frame.frame, "UIPanelButtonTemplate")
+    altBtn:SetSize(100, 22)
+    altBtn:SetPoint("TOPRIGHT", ui.frame.frame, "TOPRIGHT", -180. -30)
+    altBtn:SetText("Alt Links")
+    altBtn:SetScript("OnClick", function()
+        if ns.ui and ns.ui.toggleAltLinks then
+            ns.ui.toggleAltLinks()
+        end
+    end)
+    if not canSeeLog() then
+        altBtn:Hide()
+    end
+    ui.altLinksBtn = altBtn
+
     local memberlist = CreateFrame("Frame", nil, ui.frame.frame)
     memberlist:SetPoint("TOPLEFT", ui.frame.frame, "TOPLEFT", 12, -58)
     memberlist:SetPoint("BOTTOMRIGHT", ui.frame.frame, "BOTTOMRIGHT", -12, 12)
@@ -332,6 +346,233 @@ function ui.ensureGuildLogUI()
     end)
 end
 
+function ui.ensureAltLinksUI()
+    if ui.altLinksFrame then return end
+    if ns.helpers and ns.helpers.playerCanViewGuildLog and not ns.helpers.playerCanViewGuildLog() then
+        return
+    end
+
+    ui.altLinksFrame = ns.components.windowframe
+        :Create(700, 520, "SGLKAltLinksFrame")
+        :Title("SGLK Alt Links")
+        :Draggable()
+        :Resizable(560, 380)
+        :EscClose()
+
+    local frame = ui.altLinksFrame.frame
+    frame:ClearAllPoints()
+
+    if ui.frame and ui.frame.frame then
+        frame:SetPoint("TOPLEFT", ui.frame.frame, "TOPRIGHT", 12, -110)
+    else
+        frame:SetPoint("CENTER", UIParent, "CENTER", 180, 0)
+    end
+
+    frame:SetClampedToScreen(true)
+    frame:Hide()
+
+    frame.background = frame:CreateTexture(nil, "BACKGROUND")
+    frame.background:SetColorTexture(0, 0, 0, 0.3)
+    frame.background:SetAllPoints()
+
+    local mainLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    mainLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -34)
+    mainLabel:SetText("Main Character")
+
+    local altLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    altLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -84)
+    altLabel:SetText("Alt Character")
+
+    local mainBox = CreateFrame("EditBox", "SGLKAltLinksMainBox", frame, "InputBoxTemplate")
+    mainBox:SetSize(220, 24)
+    mainBox:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -52)
+    mainBox:SetAutoFocus(false)
+    mainBox:SetMaxLetters(80)
+
+    local altBox = CreateFrame("EditBox", "SGLKAltLinksAltBox", frame, "InputBoxTemplate")
+    altBox:SetSize(220, 24)
+    altBox:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -102)
+    altBox:SetAutoFocus(false)
+    altBox:SetMaxLetters(80)
+
+    ui._altLinksMainBox = mainBox
+    ui._altLinksAltBox = altBox
+
+    local createBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    createBtn:SetSize(110, 24)
+    createBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", 260, -52)
+    createBtn:SetText("Create Group")
+
+    local addBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    addBtn:SetSize(110, 24)
+    addBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", 380, -52)
+    addBtn:SetText("Add Alt")
+
+    local removeBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    removeBtn:SetSize(110, 24)
+    removeBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", 500, -52)
+    removeBtn:SetText("Remove Char")
+
+    local refreshBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    refreshBtn:SetSize(110, 24)
+    refreshBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", 260, -102)
+    refreshBtn:SetText("Refresh")
+
+    local scrollFrame = CreateFrame("ScrollFrame", "SGLKAltLinksScrollFrame", frame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -145)
+    scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -34, 16)
+
+    local editBox = CreateFrame("EditBox", "SGLKAltLinksDisplayBox", scrollFrame)
+    editBox:SetMultiLine(true)
+    editBox:SetFontObject(ChatFontNormal)
+    editBox:SetWidth(620)
+    editBox:SetAutoFocus(false)
+    editBox:EnableMouse(true)
+    editBox:SetTextInsets(4, 4, 4, 4)
+
+    scrollFrame:SetScrollChild(editBox)
+
+    ui._altLinksScrollFrame = scrollFrame
+    ui._altLinksDisplayBox = editBox
+
+    local function refreshDisplay()
+        ui.updateAltLinksUI()
+    end
+
+    createBtn:SetScript("OnClick", function()
+        local mainText = ui._altLinksMainBox and ui._altLinksMainBox:GetText() or ""
+        if not mainText or mainText == "" then
+            if ns.log and ns.log.error then
+                ns.log.error("Enter a main character first.")
+            end
+            return
+        end
+
+        local ok, err = ns.helpers.createAltGroup(mainText)
+        if ok then
+            if ns.log and ns.log.info then
+                ns.log.info("Created alt group for " .. tostring(mainText))
+            end
+            refreshDisplay()
+        else
+            if ns.log and ns.log.error then
+                ns.log.error(tostring(err or "Failed to create alt group."))
+            end
+        end
+    end)
+
+    addBtn:SetScript("OnClick", function()
+        local mainText = ui._altLinksMainBox and ui._altLinksMainBox:GetText() or ""
+        local altText = ui._altLinksAltBox and ui._altLinksAltBox:GetText() or ""
+
+        if mainText == "" or altText == "" then
+            if ns.log and ns.log.error then
+                ns.log.error("Enter both a main character and an alt character.")
+            end
+            return
+        end
+
+        local ok, err = ns.helpers.addAltLink(mainText, altText)
+        if ok then
+            if ns.log and ns.log.info then
+                ns.log.info("Linked alt " .. tostring(altText) .. " to main " .. tostring(mainText))
+            end
+            refreshDisplay()
+        else
+            if ns.log and ns.log.error then
+                ns.log.error(tostring(err or "Failed to link alt."))
+            end
+        end
+    end)
+
+    removeBtn:SetScript("OnClick", function()
+        local targetText = ui._altLinksAltBox and ui._altLinksAltBox:GetText() or ""
+        if targetText == "" then
+            targetText = ui._altLinksMainBox and ui._altLinksMainBox:GetText() or ""
+        end
+
+        if targetText == "" then
+            if ns.log and ns.log.error then
+                ns.log.error("Enter a character to remove.")
+            end
+            return
+        end
+
+        local ok, err = ns.helpers.removeCharacterFromAltLinks(targetText)
+        if ok then
+            if ns.log and ns.log.info then
+                ns.log.info("Removed " .. tostring(targetText) .. " from alt links.")
+            end
+            refreshDisplay()
+        else
+            if ns.log and ns.log.error then
+                ns.log.error(tostring(err or "Failed to remove character from alt links."))
+            end
+        end
+    end)
+
+    refreshBtn:SetScript("OnClick", refreshDisplay)
+end
+
+function ui.updateAltLinksUI()
+    if not ui._altLinksDisplayBox then return end
+    if not ns.helpers or not ns.helpers.getAllAltGroups then return end
+
+    local lines = {}
+    local groups = ns.helpers.getAllAltGroups() or {}
+
+    if #groups == 0 then
+        lines[#lines + 1] = "No alt groups defined."
+    else
+        for _, group in ipairs(groups) do
+            local mainShort = (ns.helpers.getShort and ns.helpers.getShort(group.main)) or group.main
+            lines[#lines + 1] = mainShort .. " [" .. tostring(group.main) .. "]"
+
+            local altKeys = {}
+            if group.alts then
+                for altKey in pairs(group.alts) do
+                    altKeys[#altKeys + 1] = altKey
+                end
+            end
+            table.sort(altKeys)
+
+            if #altKeys == 0 then
+                lines[#lines + 1] = "  - (no alts)"
+            else
+                for _, altKey in ipairs(altKeys) do
+                    local altShort = (ns.helpers.getShort and ns.helpers.getShort(altKey)) or altKey
+                    lines[#lines + 1] = "  - " .. altShort .. " [" .. altKey .. "]"
+                end
+            end
+
+            lines[#lines + 1] = ""
+        end
+    end
+
+    local text = table.concat(lines, "\n")
+    ui._altLinksDisplayBox:SetText(text)
+    ui._altLinksDisplayBox:SetCursorPosition(0)
+end
+
+function ui.toggleAltLinks()
+    ui.ensureAltLinksUI()
+    if not ui.altLinksFrame then
+        if ns.log and ns.log.error then
+            ns.log.error("No permission to manage alt links.")
+        end
+        return
+    end
+
+    local frame = ui.altLinksFrame.frame
+    if frame:IsShown() then
+        frame:Hide()
+    else
+        frame:Show()
+        frame:Raise()
+        ui.updateAltLinksUI()
+    end
+end
+
 function ui.toggleGuildLog()
     ui.ensureGuildLogUI()
     if not ui.guildLogFrame then
@@ -381,25 +622,22 @@ function ui.updateMemberList(showOnlineOnly)
         end
         member.version = v
 
-        local enabled = false
+        local addonState = "-"
 
         local online = (member.online == "Yes")
         local savedMissing = (saved and saved._missing == true)
         local liveLastSeen = live and live.lastSeen or nil
         local liveRecent = (liveLastSeen and ((GetTime() - liveLastSeen) <= 120)) or false
         local liveActive = (live and live.active == true)
-        local savedActive = (saved and saved.active == true)
 
         if not online then
-            enabled = false
+            addonState = "—"
         elseif savedMissing then
-            enabled = false
+            addonState = false
         elseif liveRecent and liveActive then
-            enabled = true
-        elseif savedActive and not savedMissing then
-            enabled = true
+            addonState = true
         else
-            enabled = false
+            addonState = false
         end
         if key == "Frìaclaw-Spineshatter" then
             ns.log.info(
@@ -408,11 +646,10 @@ function ui.updateMemberList(showOnlineOnly)
                 " savedMissing=" .. tostring(savedMissing) ..
                 " liveRecent=" .. tostring(liveRecent) ..
                 " liveActive=" .. tostring(liveActive) ..
-                " savedActive=" .. tostring(savedActive) ..
-                " final=" .. tostring(enabled)
+                " final=" .. tostring(addonState)
             )
         end
-        member.addon_active = enabled
+        member.addon_active = addonState
 
         -- -----------------------------
         -- Profession polling
@@ -454,18 +691,15 @@ function ui.updateGuildLog()
         return
     end
 
-    -- Debounce refresh
     if ui._guildLogUpdatePending then return end
     ui._guildLogUpdatePending = true
 
     C_Timer.After(0.35, function()
         ui._guildLogUpdatePending = false
 
-        -- Version 1.0.7 new code
         ui._guildRows = ui._guildRows or {}
         local rows = ui._guildRows
         wipe(rows)
-        -- New code ends here
         for _, entry in ipairs(ns.db.guildLog or {}) do
             local ts = entry.time or 0
             local sender = tostring(entry.sender or "?")

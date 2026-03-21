@@ -127,11 +127,48 @@ local function isUnknownSender(sender)
     return s == "unknown" or s == "unbekannt"
 end
 
+function receivemail.logBlockedAltMail(senderKey)
+    local meKey = ns.helpers and ns.helpers.getPlayerKey and ns.helpers.getPlayerKey()
+    if not meKey or not senderKey then return end
+
+    receivemail._altLogThrottle = receivemail._altLogThrottle or {}
+
+    local now = time()
+    local id = "mail-alt-recv:" .. tostring(meKey) .. ":" .. tostring(senderKey)
+    local last = receivemail._altLogThrottle[id] or 0
+
+    if (now - last) < 5 then
+        return
+    end
+    receivemail._altLogThrottle[id] = now
+
+    local meShort = (ns.helpers and ns.helpers.getShort and ns.helpers.getShort(meKey)) or meKey
+    local senderShort = (ns.helpers and ns.helpers.getShort and ns.helpers.getShort(senderKey)) or senderKey
+
+    if ns.guildLog and ns.guildLog.send then
+        ns.guildLog.send(
+            ("%s blocked mail from linked alt %s"):format(meShort, senderShort),
+            {
+                kind = "blocked",
+                broadcast = true,
+                eventId = id,
+            }
+        )
+    end
+end
+
 function receivemail.isAllowed(index)
     local _, _, sender, _, money, CODAmount, _, hasItem = GetInboxHeaderInfo(index)
     if not sender or isUnknownSender(sender) then
         return false
     end
+
+    local senderKey = ns.helpers and ns.helpers.getKey and ns.helpers.getKey(sender) or sender
+    if ns.helpers and ns.helpers.isMyLinkedAlt and ns.helpers.isMyLinkedAlt(senderKey) then
+        receivemail.logBlockedAltMail(senderKey)
+        return false
+    end
+
     local shortName = true
     if ns.helpers.isGuildMember(sender, shortName) then
         return true

@@ -171,6 +171,206 @@ function helpers.getGuildRosterOnlineSet()
     return online
 end
 
+function helpers.ensureAltLinks()
+    if not ns.db then return nil end
+    ns.db.altLinks = ns.db.altLinks or {}
+    return ns.db.altLinks
+end
+
+function helpers.normalizeCharacterKey(name)
+    if not name or name == "" then return nil end
+    if helpers.getKey then
+        return helpers.getKey(name)
+    end
+    return name
+end
+
+function helpers.getAltLinks()
+    if not ns.db then return {} end
+    ns.db.altLinks = ns.db.altLinks or {}
+    return ns.db.altLinks
+end
+
+function helpers.findAltMain(nameOrKey)
+    local key = helpers.normalizeCharacterKey(nameOrKey)
+    if not key then return nil end
+
+    local altLinks = helpers.getAltLinks()
+
+    for mainKey, group in pairs(altLinks) do
+        if mainKey == key then
+            return mainKey
+        end
+        if group and group.alts and group.alts[key] then
+            return mainKey
+        end
+    end
+
+    return nil
+end
+
+function helpers.getAltGroup(nameOrKey)
+    local mainKey = helpers.findAltMain(nameOrKey)
+    if not mainKey then return nil, nil end
+
+    local altLinks = helpers.getAltLinks()
+    return altLinks[mainKey], mainKey
+end
+
+function helpers.isMainCharacter(nameOrKey)
+    local key = helpers.normalizeCharacterKey(nameOrKey)
+    if not key then return false end
+    return helpers.findAltMain(key) == key
+end
+
+function helpers.isAltCharacter(nameOrKey)
+    local key = helpers.normalizeCharacterKey(nameOrKey)
+    if not key then return false end
+
+    local mainKey = helpers.findAltMain(key)
+    return mainKey ~= nil and mainKey ~= key
+end
+
+function helpers.areLinkedAlts(a, b)
+    local keyA = helpers.normalizeCharacterKey(a)
+    local keyB = helpers.normalizeCharacterKey(b)
+    if not keyA or not keyB then return false end
+
+    local mainA = helpers.findAltMain(keyA)
+    local mainB = helpers.findAltMain(keyB)
+
+    return mainA ~= nil and mainA == mainB
+end
+
+function helpers.getPlayerKey()
+    if ns.globals and ns.globals.CHARACTERNAME and helpers.getKey then
+        return helpers.getKey(ns.globals.CHARACTERNAME)
+    end
+    local playerName = UnitName("player")
+    if playerName and helpers.getKey then
+        return helpers.getKey(playerName)
+    end
+    return playerName
+end
+
+function helpers.isOwnAltPair(playerNameOrKey, otherNameOrKey)
+    local me = helpers.normalizeCharacterKey(playerNameOrKey)
+    local other = helpers.normalizeCharacterKey(otherNameOrKey)
+    if not me or not other then return false end
+    if me == other then
+        return false
+    end
+
+    return helpers.areLinkedAlts(me, other)
+end
+
+function helpers.isMyLinkedAlt(otherNameOrKey)
+    local me = helpers.getPlayerKey()
+    if not me then return false end
+    return helpers.isOwnAltPair(me, otherNameOrKey)
+end
+
+function helpers.removeCharacterFromAltLinks(nameOrKey)
+    local key = helpers.normalizeCharacterKey(nameOrKey)
+    if not key then return false, "Invalid character." end
+
+    local altLinks = helpers.ensureAltLinks()
+    if not altLinks then return false, "DB not ready." end
+
+    for mainKey, group in pairs(altLinks) do
+        if mainKey == key then
+            altLinks[mainKey] = nil
+            return true
+        end
+        if group and group.alts and group.alts[key] then
+            group.alts[key] = nil
+            return true
+        end
+    end
+
+    return false, "Character not found in alt links."
+end
+
+function helpers.createAltGroup(mainNameOrKey)
+    local mainKey = helpers.normalizeCharacterKey(mainNameOrKey)
+    if not mainKey then return false, "Invalid main character." end
+
+    local altLinks = helpers.ensureAltLinks()
+    if not altLinks then return false, "DB not ready." end
+
+    local existingMain = helpers.findAltMain(mainKey)
+    if existingMain and existingMain ~= mainKey then
+        helpers.removeCharacterFromAltLinks(mainKey)
+    end
+
+    altLinks[mainKey] = altLinks[mainKey] or {
+        main = mainKey,
+        alts = {}
+    }
+
+    return true
+end
+
+function helpers.addAltLink(mainNameOrKey, altNameOrKey)
+    local mainKey = helpers.normalizeCharacterKey(mainNameOrKey)
+    local altKey = helpers.normalizeCharacterKey(altNameOrKey)
+
+    if not mainKey or not altKey then
+        return false, "Invalid character name."
+    end
+    if mainKey == altKey then
+        return false, "Main and alt cannot be the same."
+    end
+
+    local altLinks = helpers.ensureAltLinks()
+    if not altLinks then return false, "DB not ready." end
+    helpers.removeCharacterFromAltLinks(altKey)
+    altLinks[mainKey] = altLinks[mainKey] or {
+        main = mainKey,
+        alts = {}
+    }
+
+    altLinks[mainKey].alts = altLinks[mainKey].alts or {}
+    altLinks[mainKey].alts[altKey] = true
+
+    return true
+end
+
+function helpers.getAltGroupMembers(mainNameOrKey)
+    local group, mainKey = helpers.getAltGroup(mainNameOrKey)
+    if not group or not mainKey then return nil end
+
+    local out = {}
+    out[#out + 1] = mainKey
+
+    if group.alts then
+        for altKey in pairs(group.alts) do
+            out[#out + 1] = altKey
+        end
+    end
+
+    table.sort(out)
+    return out
+end
+
+function helpers.getAllAltGroups()
+    local altLinks = helpers.getAltLinks()
+    local groups = {}
+
+    for mainKey, group in pairs(altLinks) do
+        groups[#groups + 1] = {
+            main = mainKey,
+            alts = group and group.alts or {}
+        }
+    end
+
+    table.sort(groups, function(a, b)
+        return tostring(a.main) < tostring(b.main)
+    end)
+
+    return groups
+end
+
 local AceSerializer = LibStub("AceSerializer-3.0")
 local key = 42
 

@@ -81,7 +81,7 @@ function ns.guildLog.send(message, opts)
     local entry = {
         message = tostring(message),
         sender = (ns.globals and ns.globals.CHARACTERNAME) or UnitName("player") or "?",
-        time = time(),
+        time = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time,
         kind = opts.kind or "info",
         eventId = opts.eventId or nil,
     }
@@ -108,7 +108,7 @@ function ns.guildLog.receive(entry)
     if not ensureDB() then return end
 
     local clean = {
-        time = entry.time or time(),
+        time = entry.time or ((ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()),
         sender = entry.sender or "?",
         message = tostring(entry.message or ""),
         kind = entry.kind or "info",
@@ -143,7 +143,7 @@ function ns.guildLog.clearSeenEvent(eventId)
     if order then
         for i = #order, 1, -1 do
             if order[i] == id then
-                table.remove(order, 1)
+                table.remove(order, i)
             end
         end
     end
