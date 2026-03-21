@@ -655,7 +655,7 @@ function ui.updateMemberList(showOnlineOnly)
         -- Profession polling
         -- -----------------------------
 
-        local hasAddon = saved and saved.seen == true and saved.enabled ~= false
+        local hasAddon = online and liveRecent and liveActive and not savedMissing
 
         if key and online and hasAddon and shouldRequestProf(charData) then
             ui._profReqLast[key] = ui._profReqLast[key] or 0

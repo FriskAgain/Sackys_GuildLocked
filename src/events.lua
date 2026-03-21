@@ -72,6 +72,41 @@ local function ProfScanBurst()
     C_Timer.After(6.0, DelayedProfScan)
 end
 
+local function TryGuildInit()
+    if didGuildInit then
+        return true
+    end
+    if not IsInGuild() then
+        return false
+    end
+    if not ns.globals or not ns.globals.CHARACTERNAME then
+        return false
+    end
+    local rank = ns.helpers.getGuildMemberRank(ns.globals.CHARACTERNAME)
+    if type(rank) ~= "number" then
+        return false
+    end
+
+    didGuildInit = true
+    ns.log.debug("Guild roster ready. Initializing guild systems.")
+    ns.option_defaults.initialize()
+    ns.sglk.initialize()
+    ns.restrictions.sendmail.initialize()
+    ns.sync.base.initialize()
+    ns.sync.mailexception.initialize()
+
+    ProfScanBurst()
+    C_Timer.After(12, DelayedProfScan)
+    C_Timer.After(25, DelayedProfScan)
+    local ver = ns.globals.ADDONVERSION or "?"
+    ns.networking.SendToGuild("ADDON_STATUS", {
+        state = "ONLINE",
+        version = ver
+    })
+
+    return true
+end
+
 frame:SetScript("OnEvent", function(self, event, arg1, arg2)
     if event == "ADDON_LOADED" then
         self:UnregisterEvent("ADDON_LOADED")
@@ -101,10 +136,16 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 if ns.globals and ns.globals.update then
                     ns.globals.update()
                 end
+                if GuildRoster then
+                    GuildRoster()
+                end
+                TryGuildInit()
                 if ns.ui and ns.ui.refresh then
                     ns.ui.refresh()
                 end
             end)
+        else
+            didGuildInit = false
         end
         return
 
@@ -144,28 +185,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
             return
         end
 
-        if not didGuildInit then
-            local rank = ns.helpers.getGuildMemberRank(ns.globals.CHARACTERNAME)
-            if type(rank) == "number" then
-                didGuildInit = true
-                ns.log.debug("Guild roster ready. Initializing guild systems.")
-                
-                ns.option_defaults.initialize()
-                ns.sglk.initialize()
-                ns.restrictions.sendmail.initialize()
-                ns.sync.base.initialize()
-                ns.sync.mailexception.initialize()
-                ProfScanBurst()
-                C_Timer.After(12, DelayedProfScan)
-                C_Timer.After(25, DelayedProfScan)
-
-                local ver = ns.globals.ADDONVERSION or "?"
-                ns.networking.SendToGuild("ADDON_STATUS", {
-                    state = "ONLINE",
-                    version = ver
-                })
-            end
-        end
+        TryGuildInit()
         QueueGuildUIRefresh()
 
         return
