@@ -221,15 +221,20 @@ function ui.refresh()
         ui.dataBuffer = ui.updateMemberList(showOnlineOnly)
 
         ui._rosterRetryCount = ui._rosterRetryCount or 0
-        if IsInGuild and IsInGuild() and (#(ui.dataBuffer or {}) == 0) then
-            if ui._rosterRetryCount < 5 then
+        if IsInGuild and IsInGuild() and rosterEmpty then
+            if ui._rosterRetryCount < 10 then
                 ui._rosterRetryCount = ui._rosterRetryCount + 1
 
+                if ns.log and ns.log.info then
+                    ns.log.info("Roster Retry #" .. tostring(ui._rosterRetryCount) .. " (guildCount=" .. tostring(guildCount) .. ", rows=" .. tostring(#(ui.dataBuffer or {})) .. ")")
+                end
                 if GuildRoster then
                     GuildRoster()
                 end
-
                 C_Timer.After(1, function()
+                    if GuildRoster then
+                        GuildRoster()
+                    end
                     if ns.ui and ns.ui.refresh then
                         ns.ui.refresh()
                     end

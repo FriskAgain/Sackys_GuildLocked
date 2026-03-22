@@ -124,6 +124,21 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 GuildRoster()
             end
         end)
+        C_Timer.After(4, function()
+            if IsInGuild() and GuildRoster then
+                GuildRoster()
+            end
+        end)
+        C_Timer.After(7, function()
+            if IsInGuild() and GuildRoster then
+                GuildRoster()
+            end
+            TryGuildInit()
+            if ns.ui and ns.ui.refresh then
+                ns.ui.refresh()
+            end
+        end)
+        
         self:UnregisterEvent("PLAYER_LOGIN")
         return
 
@@ -136,6 +151,15 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
                 if ns.globals and ns.globals.update then
                     ns.globals.update()
                 end
+                if GuildRoster then
+                    GuildRoster()
+                end
+                TryGuildInit()
+                if ns.ui and ns.ui.refresh then
+                    ns.ui.refresh()
+                end
+            end)
+            C_Timer.After(3, function()
                 if GuildRoster then
                     GuildRoster()
                 end
