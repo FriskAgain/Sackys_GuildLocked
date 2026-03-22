@@ -45,10 +45,8 @@ function networking.initialize()
     ns.db.chars = ns.db.chars or {}
     ns.db.guildLog = ns.db.guildLog or {}
 
-    -- normalize persisted addonstatus
     for k, v in pairs(ns.db.addonStatus or {}) do
         if type(v) == "table" then
-            -- If we have a version stored, this user has been "seen" running the adon at least once
             if (v.seen == nil) and v.version and v.version ~= "" and v.version ~= "-" then
                 v.seen = true
             end
@@ -338,7 +336,7 @@ function networking.initialize()
         local nowSession = GetTime()
         local nowStamp = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
         local HEARTBEAT = 30
-        local GRACE = 10
+        local GRACE = 90
         local MISS_STRIKES = 2
 
         for key, _ in pairs (onlineSet) do

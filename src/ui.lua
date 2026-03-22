@@ -644,16 +644,6 @@ function ui.updateMemberList(showOnlineOnly)
         else
             addonState = false
         end
-        if key == "Frìaclaw-Spineshatter" then
-            ns.log.info(
-                "DEBUG key=" .. tostring(key) ..
-                " online=" .. tostring(online) ..
-                " savedMissing=" .. tostring(savedMissing) ..
-                " liveRecent=" .. tostring(liveRecent) ..
-                " liveActive=" .. tostring(liveActive) ..
-                " final=" .. tostring(addonState)
-            )
-        end
         member.addon_active = addonState
 
         -- -----------------------------
@@ -712,7 +702,7 @@ function ui.updateGuildLog()
             local msg = tostring(entry.message or "")
             rows[#rows+1] = {
                 ts = ts,
-                time = date("%d/%m %H:%M", ts),
+                time = date("!%d/%m %H:%M", ts),
                 sender = shortSender,
                 message = msg,
                 kind = entry.kind or "info"
