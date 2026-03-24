@@ -231,7 +231,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
 
             if SendChatMessage then
                 SendChatMessage(
-                    "This character only groups with guild members.",
+                    "This character is part of <Earned Not Bought>'s GuildFound/CraftedLocked challenge, so I only group with guildmates. We're recruiting! Fresh character required, join before leveling, in-house addon used. Whisper if interested!",
                     "WHISPER",
                     nil,
                     inviteName
