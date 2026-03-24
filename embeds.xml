@@ -26,6 +26,8 @@
     <Script file="src/packets/SGLK_PROF_DATA.lua" />
     <Script file="src/packets/ADDON_STATUS.lua" />
     <Script file="src/packets/GUILD_LOG.lua" />
+    <Script file="src/packets/ALT_LINKS_FULL.lua"/>
+    <Script file="src/packets/REQ_ALT_LINKS.lua"/>
 
     <!-- Components -->
     <Script file="src/components/minimapbutton.lua" />
@@ -53,6 +55,7 @@
     <!-- Sync -->
     <Script file="src/sync/base.lua" />
     <Script file="src/sync/mailexception.lua" />
+    <Script file="src/sync/altlinks.lua" />
 
     <!-- Base -->
     <Script file="sglk.lua" />
