@@ -96,6 +96,7 @@ local function TryGuildInit()
     ns.restrictions.sendmail.initialize()
     ns.sync.base.initialize()
     ns.sync.mailexception.initialize()
+    ns.sync.altlinks.initialize()
 
     ProfScanBurst()
     C_Timer.After(12, DelayedProfScan)
@@ -105,6 +106,12 @@ local function TryGuildInit()
         state = "ONLINE",
         version = ver
     })
+
+    C_Timer.After(1, function()
+        if ns.sync and ns.sync.altlinks and ns.sync.altlinks.requestFull then
+            ns.sync.altlinks.requestFull(true)
+        end
+    end)
 
     return true
 end

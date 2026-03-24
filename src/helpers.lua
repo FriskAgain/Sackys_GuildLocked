@@ -564,3 +564,25 @@ function helpers.playerCanViewGuildLog()
 
     return rankIndex <= requiredRank
 end
+
+function helpers.canCharacterManageOfficerTools(nameOrKey)
+    if not ns or not ns.db then return false end
+    if not IsInGuild() then return false end
+
+    local key = helpers.normalizeCharacterKey and helpers.normalizeCharacterKey(nameOrKey) or nameOrKey
+    if not key or key == "" then return false end
+
+    local short = helpers.getShort and helpers.getShort(key) or key
+    local rankIndex = helpers.getGuildMemberRank and helpers.getGuildMemberRank(short)
+    if type(rankIndex) ~= "number" then
+        return false
+    end
+
+    local profile = ns.db.profile or {}
+    local requiredRank = profile.logMinRank
+    if type(requiredRank) ~= "number" then
+        requiredRank = 2
+    end
+
+    return rankIndex <= requiredRank
+end

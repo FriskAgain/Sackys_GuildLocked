@@ -65,7 +65,7 @@ function ui.initialize()
 
     local altBtn = CreateFrame("Button", nil, ui.frame.frame, "UIPanelButtonTemplate")
     altBtn:SetSize(100, 22)
-    altBtn:SetPoint("TOPRIGHT", ui.frame.frame, "TOPRIGHT", -180. -30)
+    altBtn:SetPoint("TOPRIGHT", ui.frame.frame, "TOPRIGHT", -180, -30)
     altBtn:SetText("Alt Links")
     altBtn:SetScript("OnClick", function()
         if ns.ui and ns.ui.toggleAltLinks then
@@ -458,6 +458,9 @@ function ui.ensureAltLinksUI()
             if ns.log and ns.log.info then
                 ns.log.info("Created alt group for " .. tostring(mainText))
             end
+            if ns.sync and ns.sync.altlinks and ns.sync.altlinks.broadcastFull then
+                ns.sync.altlinks.broadcastFull(true)
+            end
             refreshDisplay()
         else
             if ns.log and ns.log.error then
@@ -481,6 +484,9 @@ function ui.ensureAltLinksUI()
         if ok then
             if ns.log and ns.log.info then
                 ns.log.info("Linked alt " .. tostring(altText) .. " to main " .. tostring(mainText))
+            end
+            if ns.sync and ns.sync.altlinks and ns.sync.altlinks.broadcastFull then
+                ns.sync.altlinks.broadcastFull(true)
             end
             refreshDisplay()
         else
@@ -507,6 +513,9 @@ function ui.ensureAltLinksUI()
         if ok then
             if ns.log and ns.log.info then
                 ns.log.info("Removed " .. tostring(targetText) .. " from alt links.")
+            end
+            if ns.sync and ns.sync.altlinks and ns.sync.altlinks.broadcastFull then
+                ns.sync.altlinks.broadcastFull(true)
             end
             refreshDisplay()
         else
