@@ -23,6 +23,8 @@ frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 local didGuildInit = false
+local inviteReplyCooldown = {}
+local INVITE_REPLY_COOLDOWN = 300
 
 local function RequestGuildRoster()
     if GuildRoster then
@@ -229,13 +231,20 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
             if DeclineGroup then DeclineGroup() end
             if StaticPopup_Hide then StaticPopup_Hide("PARTY_INVITE") end
 
-            if SendChatMessage then
-                SendChatMessage(
-                    "This character is part of <Earned Not Bought>'s GuildFound/CraftedLocked challenge, so I only group with guildmates. We're recruiting! Fresh character required, join before leveling, in-house addon used. Whisper if interested!",
-                    "WHISPER",
-                    nil,
-                    inviteName
-                )
+            local now = GetTime()
+            local cooldownKey = (ns.helpers and ns.helpers.getKey and ns.helpers.getKey(inviteName)) or inviteName
+            local lastReply = inviteReplyCooldown[cooldownKey] or 0
+
+            if (now - lastReply) >= INVITE_REPLY_COOLDOWN then
+                inviteReplyCooldown[cooldownKey] = now
+                if SendChatMessage then
+                    SendChatMessage(
+                        "This character is part of <Earned Not Bought>'s GuildFound/CraftedLocked challenge, so I only group with guildmates. We're recruiting! Fresh character required, join before leveling, in-house addon used. Whisper if interested!",
+                        "WHISPER",
+                        nil,
+                        inviteName
+                    )
+                end
             end
         end
         return
