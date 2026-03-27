@@ -546,6 +546,25 @@ function helpers.scanPlayerProfessions()
     end
 end
 
+function helpers.getOfficerToolRequiredRankForRealm(realmName)
+    if not ns or not ns.db then return 3 end
+
+    local profile = ns.db.profile or {}
+    local byRealm = profile.logMinRankByRealm or {}
+
+    realmName = realmName or GetRealmName()
+
+    if type(byRealm[realmName]) == "number" then
+        return byRealm[realmName]
+    end
+
+    if type(byRealm._default) == "number" then
+        return byRealm._default
+    end
+
+    return 3
+end
+
 function helpers.playerCanViewGuildLog()
     if not ns or not ns.db then return false end
     if not IsInGuild() then return false end
@@ -558,10 +577,7 @@ function helpers.playerCanViewGuildLog()
         return false
     end
 
-    local profile = ns.db.profile or {}
-    local requiredRank = profile.logMinRank
-    if type(requiredRank) ~= "number" then requiredRank = 2 end
-
+    local requiredRank = helpers.getOfficerToolRequiredRankForRealm(GetRealmName())
     return rankIndex <= requiredRank
 end
 
@@ -578,11 +594,8 @@ function helpers.canCharacterManageOfficerTools(nameOrKey)
         return false
     end
 
-    local profile = ns.db.profile or {}
-    local requiredRank = profile.logMinRank
-    if type(requiredRank) ~= "number" then
-        requiredRank = 2
-    end
+    local realmName = key:match("-(.+)$") or GetRealmName()
+    local requiredRank = helpers.getOfficerToolRequiredRankForRealm(realmName)
 
     return rankIndex <= requiredRank
 end
