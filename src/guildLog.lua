@@ -149,6 +149,43 @@ function ns.guildLog.clearSeenEvent(eventId)
     end
 end
 
+function ns.guildLog.hasRecentStatusLock(kind, characterKey, seconds)
+    if not ensureDB() then return false end
+    if not kind or not characterKey then return false end
+
+    seconds = tonumber(seconds) or 60
+
+    ns.db.guildLogMeta._statusLocks = ns.db.guildLogMeta._statusLocks or {}
+    local locks = ns.db.guildLogMeta._statusLocks
+    local lockId = tostring(kind) .. ":" .. tostring(characterKey)
+    local now = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
+
+    local expiresAt = locks[lockId]
+    if type(expiresAt) == "number" and expiresAt > now then
+        return true
+    end
+
+    if expiresAt then
+        locks[lockId] = nil
+    end
+
+    return false
+end
+
+function ns.guildLog.setStatusLock(kind, characterKey, seconds)
+    if not ensureDB() then return end
+    if not kind or not characterKey then return end
+
+    seconds = tonumber(seconds) or 60
+
+    ns.db.guildLogMeta._statusLocks = ns.db.guildLogMeta._statusLocks or {}
+    local locks = ns.db.guildLogMeta._statusLocks
+    local lockId = tostring(kind) .. ":" .. tostring(characterKey)
+    local now = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
+
+    locks[lockId] = now + seconds
+end
+
 function ns.guildLog.exportRecent(limit)
     if not ensureDB() then return {} end
 

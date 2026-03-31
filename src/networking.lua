@@ -380,14 +380,23 @@ function networking.initialize()
                                             s._missingEventId = missingEventId
 
                                             if ns.guildLog and ns.guildLog.send then
-                                                ns.guildLog.send(
-                                                    (ns.helpers.getShort(key) or key) .. " is online without SGLK enabled",
-                                                    {
-                                                        kind = "warn",
-                                                        broadcast = true,
-                                                        eventId = missingEventId
-                                                    }
-                                                )
+                                                local suppress = false
+                                                if ns.guildLog.hasRecentStatusLock then
+                                                    suppress = ns.guildLog.hasRecentStatusLock("missing", key, 120)
+                                                end
+                                                if not suppress then
+                                                    if ns.guildLog.setStatusLock then
+                                                        ns.guildLog.setStatusLock("missing", key, 120)
+                                                    end
+                                                    ns.guildLog.send(
+                                                        (ns.helpers.getShort(key) or key) .. " is online without SGLK enabled",
+                                                        {
+                                                            kind = "warn",
+                                                            broadcast = true,
+                                                            eventId = missingEventId
+                                                        }
+                                                    )
+                                                end
                                             end
                                         end
                                     end

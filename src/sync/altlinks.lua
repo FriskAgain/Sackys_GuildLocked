@@ -10,6 +10,22 @@ local THROTTLE_SECONDS = 3
 
 altlinks._lastBroadcastAt = 0
 altlinks._lastRequestAt = 0
+altlinks._answered = altlinks._answered or {}
+
+local function pruneAnswered(now)
+    for id, expiresAt in pairs(altlinks._answered) do
+        if type(expiresAt) ~= "number" or expiresAt <= now then
+            altlinks._answered[id] = nil
+        end
+    end
+end
+
+local function markAnswered(requestId)
+    if not requestId or requestId == "" then return end
+    local now = time()
+    pruneAnswered(now)
+    altlinks._answered[requestId] = now + 10
+end
 
 local function deepCopyAltLinks(src)
     local out = {}
@@ -98,6 +114,35 @@ function altlinks.broadcastFull(force)
     return true
 end
 
+function altlinks.sendFullTo(target, requestId, force)
+    if not ns.networking or not ns.networking.SendWhisper then
+        return false, "Networking not ready."
+    end
+    if not ns.db then
+        return false, "DB not ready."
+    end
+    if type(target) ~= "string" or target == "" then
+        return false, "Invalid target."
+    end
+
+    local now = GetTime()
+    if not force and (now - (altlinks._lastBroadcastAt or 0)) < THROTTLE_SECONDS then
+        return false, "Alt links send throttled."
+    end
+    altlinks._lastBroadcastAt = now
+
+    ns.db.altLinks = ns.db.altLinks or {}
+
+    ns.networking.SendWhisper(PACKET_FULL, {
+        requestId = requestId,
+        links = deepCopyAltLinks(ns.db.altLinks),
+        updatedAt = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time(),
+        updatedBy = (ns.globals and ns.globals.CHARACTERNAME) or UnitName("player") or "?",
+    }, target)
+
+    return true
+end
+
 function altlinks.requestFull(force)
     if not ns.networking or not ns.networking.SendToGuild then
         return false, "Networking not ready."
@@ -109,7 +154,11 @@ function altlinks.requestFull(force)
     end
     altlinks._lastRequestAt = now
 
+    local requestId = (ns.helpers and ns.helpers.makeRequestId and ns.helpers.makeRequestId("ALTLINKS"))
+        or (tostring(time()) .. "-" .. tostring(math.random(1000, 9999)))
+
     ns.networking.SendToGuild(PACKET_REQ, {
+        requestId = requestId,
         requestedAt = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time(),
         requestedBy = (ns.globals and ns.globals.CHARACTERNAME) or UnitName("player") or "?",
     })
@@ -124,6 +173,11 @@ function altlinks.applyFull(payload, sender)
         return false, "Sender not allowed to sync alt links."
     end
 
+    local requestId = tostring(payload.requestId or "")
+    if requestId ~= "" then
+        markAnswered(requestId)
+    end
+
     ns.db.altLinks = normalizeAltLinks(payload.links)
 
     if ns.ui and ns.ui.altLinksFrame and ns.ui.altLinksFrame.frame and ns.ui.altLinksFrame.frame:IsShown() then
@@ -132,8 +186,10 @@ function altlinks.applyFull(payload, sender)
         end
     end
 
-    if ns.log and ns.log.info then
-        ns.log.info("Applied alt links sync from " .. tostring(sender))
+    if ns.helpers and ns.helpers.playerCanViewGuildLog and ns.helpers.playerCanViewGuildLog() then
+        if ns.log and ns.log.debug then
+            ns.log.debug("Applied alt links sync from " .. tostring(sender))
+        end
     end
 
     return true
@@ -150,5 +206,26 @@ function altlinks.handleRequest(sender, payload)
         return false, "Requester is not a guild member."
     end
 
-    return altlinks.broadcastFull(true)
+    local requestId = tostring(payload and payload.requestId or "")
+    if requestId == "" then
+        requestId = tostring(sender) .. ":" .. tostring(time())
+    end
+
+    local delay = 0.20 + (math.random() * 0.80)
+
+    C_Timer.After(delay, function()
+        local now = time()
+        pruneAnswered(now)
+
+        if altlinks._answered[requestId] then
+            return
+        end
+
+        local ok = altlinks.sendFullTo(sender, requestId, true)
+        if ok then
+            markAnswered(requestId)
+        end
+    end)
+
+    return true
 end

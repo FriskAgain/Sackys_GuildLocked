@@ -35,11 +35,20 @@ local function maybeLogReenabled(key, s, nowStamp)
         msg = msg .. " (money change: " .. moneyDeltaText .. ")"
     end
 
-    ns.guildLog.send(msg, {
-        kind = "sync",
-        broadcast = true,
-        eventId = reenabledEventId
-    })
+    local suppress = false
+    if ns.guildLog.hasRecentStatusLock then
+        suppress = ns.guildLog.hasRecentStatusLock("reenabled", key, 60)
+    end
+    if not suppress then
+        if ns.guildLog.setStatusLock then
+            ns.guildLog.setStatusLock("reenabled", key, 60)
+        end
+        ns.guildLog.send(msg, {
+            kind = "sync",
+            broadcast = true,
+            eventId = reenabledEventId
+        })
+    end
 end
 
 local function markMissingState(key, s, u, nowStamp, intentional)
