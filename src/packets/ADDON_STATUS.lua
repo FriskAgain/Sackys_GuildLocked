@@ -38,9 +38,6 @@ local function maybeLogReenabled(key, s, nowStamp)
         msg = msg .. " (money change: " .. moneyDeltaText .. ")"
     end
 
-    if ns.log and ns.log.debug then
-        ns.log.debug("Reenabled eventId = " .. tostring(reenabledEventId))
-    end
     ns.guildLog.send(msg, {
         kind = "sync",
         broadcast = true,
