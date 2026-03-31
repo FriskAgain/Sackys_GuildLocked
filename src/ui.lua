@@ -75,7 +75,7 @@ function ui.initialize()
     if not canSeeLog() then
         altBtn:Hide()
     end
-    ui.altLinksBtn = altBtn
+    ui._altLinksBtn = altBtn
 
     local memberlist = CreateFrame("Frame", nil, ui.frame.frame)
     memberlist:SetPoint("TOPLEFT", ui.frame.frame, "TOPLEFT", 12, -58)
@@ -220,6 +220,8 @@ function ui.refresh()
 
         ui.dataBuffer = ui.updateMemberList(showOnlineOnly)
 
+        local guildCount = (GetNumGuildMembers and GetNumGuildMembers()) or 0
+        local rosterEmpty = (guildCount == 0) or (#(ui.dataBuffer or {}) == 0)
         ui._rosterRetryCount = ui._rosterRetryCount or 0
         if IsInGuild and IsInGuild() and rosterEmpty then
             if ui._rosterRetryCount < 10 then
@@ -273,11 +275,30 @@ function ui.refresh()
             end
         end
 
-        if ui._officerLogBtn and ns.helpers and ns.helpers.playerCanViewGuildLog then
-            if ns.helpers.playerCanViewGuildLog() then
+        local canManageOfficer = false
+        if ns.helpers and ns.helpers.playerCanViewGuildLog then
+            canManageOfficer = ns.helpers.playerCanViewGuildLog()
+        end
+        if ui._officerLogBtn then
+            if canManageOfficer then
                 ui._officerLogBtn:Show()
             else
                 ui._officerLogBtn:Hide()
+            end
+        end
+        if ui._altLinksBtn then
+            if canManageOfficer then
+                ui._altLinksBtn:Show()
+            else
+               ui._altLinksBtn:Hide()
+            end
+        end
+        if not canManageOfficer then
+            if ui.guildLogFrame and ui.guildLogFrame.frame and ui.guildLogFrame.frame:IsShown() then
+                ui.guildLogFrame.frame:Hide()
+            end
+            if ui.altLinksFrame and ui.altLinksFrame.frame and ui.altLinksFrame.frame:IsShown() then
+                ui.altLinksFrame.frame:Hide()
             end
         end
     end)
@@ -569,6 +590,16 @@ function ui.updateAltLinksUI()
 end
 
 function ui.toggleAltLinks()
+    if not (ns.helpers and ns.helpers.playerCanViewGuildLog and ns.helpers.playerCanViewGuildLog()) then
+        if ui.altLinksFrame and ui.altLinksFrame.frame and ui.altLinksFrame.frame:IsShown() then
+            ui.altLinksFrame.frame:Hide()
+        end
+        if ns.log and ns.log.error then
+            ns.log.error("No permission to manage alt links.")
+        end
+        return
+    end
+
     ui.ensureAltLinksUI()
     if not ui.altLinksFrame then
         if ns.log and ns.log.error then
@@ -583,11 +614,24 @@ function ui.toggleAltLinks()
     else
         frame:Show()
         frame:Raise()
+        if ns.sync and ns.sync.altlinks and ns.sync.altlinks.requestFull then
+            ns.sync.altlinks.requestFull(true)
+        end
         ui.updateAltLinksUI()
     end
 end
 
 function ui.toggleGuildLog()
+    if not (ns.helpers and ns.helpers.playerCanViewGuildLog and ns.helpers.playerCanViewGuildLog()) then
+        if ui.guildLogFrame and ui.guildLogFrame.frame and ui.guildLogFrame.frame:IsShown() then
+            ui.guildLogFrame.frame:Hide()
+        end
+        if ns.log and ns.log.error then
+            ns.log.error("No permission to view guild log.")
+        end
+        return
+    end
+
     ui.ensureGuildLogUI()
     if not ui.guildLogFrame then
         if ns.log and ns.log.error then
@@ -607,6 +651,15 @@ function ui.toggleGuildLog()
         end
         frame:Show()
         frame:Raise()
+
+        if ns.networking and ns.networking.SendToGuild and ns.helpers and ns.helpers.playerCanViewGuildLog and ns.helpers.playerCanViewGuildLog() then
+            local requestId = ns.helpers and ns.helpers.makeRequestId and ns.helpers.makeRequestId("GLOG") or (tostring(time()) .. "-" .. tostring(math.random(1000, 9999)))
+            ns.networking.SendToGuild("REQ_GUILD_LOG", {
+                limit = 30,
+                requestId = requestId
+            })
+        end
+
         if ui.updateGuildLog then
             ui.updateGuildLog()
         end

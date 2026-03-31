@@ -9,6 +9,83 @@ local function safeVal(v, fallback)
     return v
 end
 
+local function maybeLogReenabled(key, s, nowStamp)
+    if not key or not s then return end
+    if not s._missing then return end
+    if not s.disabledAt then return end
+    if not ns.guildLog or not ns.guildLog.send then return end
+
+    local delta = nowStamp - s.disabledAt
+    if delta < 0 then
+        return
+    end
+
+    local missingEventId = s._missingEventId or ("missing:" .. tostring(key) .. ":" .. tostring(s.disabledAt or nowStamp))
+    local reenabledEventId = "reenabled:" .. tostring(key) .. ":" .. tostring(s.disabledAt or nowStamp)
+    if ns.guildLog.clearSeenEvent then
+        ns.guildLog.clearSeenEvent(missingEventId)
+    end
+
+    local moneyDeltaText = nil
+    if s.missingMoneyBaseline ~= nil and s.money ~= nil and ns.helpers and ns.helpers.formatMoneyDelta then
+        local moneyDelta = tonumber(s.money) - tonumber(s.missingMoneyBaseline)
+        moneyDeltaText = ns.helpers.formatMoneyDelta(moneyDelta)
+    end
+
+    local msg = (ns.helpers.getShort(key) or key) .. " re-enabled SGLK after " .. formatDuration(delta)
+    if moneyDeltaText then
+        msg = msg .. " (money change: " .. moneyDeltaText .. ")"
+    end
+
+    ns.guildLog.send(msg, {
+        kind = "sync",
+        broadcast = true,
+        eventId = reenabledEventId
+    })
+end
+
+local function markMissingState(key, s, u, nowStamp, intentional)
+    s._missing = true
+    s._missingSince = nowStamp
+    s.disabledAt = nowStamp
+
+    local missingEventId = "missing:" .. tostring(key) .. ":" .. tostring(s.disabledAt or nowStamp)
+    local reenabledEventId = "reenabled:" .. tostring(key) .. ":" .. tostring(s.disabledAt or nowStamp)
+
+    s._missingEventId = missingEventId
+
+    s.active = false
+    s.enabled = false
+
+    s.missingMoneyBaseline = tonumber(s.money) or 0
+    s.missingMoneyAt = nowStamp
+
+    s.online = true
+    s.onlineAt = s.onlineAt or nowStamp
+
+    u.active = false
+    u.enabled = false
+
+    if ns.guildLog and ns.guildLog.clearSeenEvent then
+        ns.guildLog.clearSeenEvent(reenabledEventId)
+    end
+
+    if ns.guildLog and ns.guildLog.send then
+        local msg
+        if intentional then
+            msg = (ns.helpers.getShort(key) or key) .. " disabled SGLK while online"
+        else
+            msg = (ns.helpers.getShort(key) or key) .. " is online without SGLK enabled"
+        end
+
+        ns.guildLog.send(msg, {
+            kind = "warn",
+            broadcast = true,
+            eventId = missingEventId
+        })
+    end
+end
+
 function ADDON_STATUS.handle(sender, payload)
     if not payload or not payload.state then return end
     if not ns.db then return end
@@ -28,56 +105,10 @@ function ADDON_STATUS.handle(sender, payload)
 
     local s = ns.db.addonStatus[key] or {}
     local wasEnabled = (s.enabled == true)
-    local wasVersion = s.version
     local wasOnline = (s.online == true)
     local wasMissing = (s._missing == true)
-    local disabledAt = s.disabledAt
+
     local u = ns.networking.activeUsers[key] or {}
-    if state == "ONLINE" and wasEnabled and wasVersion == version then
-        s.seen = true
-        s.lastSeen = nowStamp
-        s.online = true
-        s.active = true
-        if wasMissing and disabledAt and ns.guildLog and ns.guildLog.send then
-            local delta = nowStamp - disabledAt
-            if delta >= 0 then
-                if ns.guildLog.clearSeenEvent then
-                    ns.guildLog.clearSeenEvent("missing:" .. tostring(key))
-                end
-                local moneyDeltaText = nil
-                if s.missingMoneyBaseline ~= nil and s.money ~= nil and ns.helpers and ns.helpers.formatMoneyDelta then
-                    local moneyDelta = tonumber(s.money) - tonumber(s.missingMoneyBaseline)
-                    moneyDeltaText = ns.helpers.formatMoneyDelta(moneyDelta)
-                end
-                local msg = (ns.helpers.getShort(key) or key) .. " re-enabled SGLK after " .. formatDuration(delta)
-                if moneyDeltaText then
-                    msg = msg .. " (money change: " .. moneyDeltaText .. ")"
-                end
-                ns.guildLog.send(
-                    msg,
-                    {
-                        kind = "sync",
-                        broadcast = true,
-                        eventId = "reenabled:" .. tostring(key)
-                    }
-                )
-            end
-        end
-
-        s._missing = nil
-        s._missingSince = nil
-        s._missingEventId = nil
-        s.missingMoneyBaseline = nil
-        s.missingMoneyAt = nil
-
-        u.version = version
-        u.lastSeen = nowSession
-        u.active = true
-
-        ns.db.addonStatus[key] = s
-        ns.networking.activeUsers[key] = u
-        return
-    end
 
     s.seen = true
     s.version = version
@@ -110,38 +141,33 @@ function ADDON_STATUS.handle(sender, payload)
             s.enabledAt = nowStamp
         end
         s.active = true
+        u.active = true
+        u.enabled = true
 
-        if wasMissing and disabledAt and ns.guildLog and ns.guildLog.send then
-            local delta = nowStamp - disabledAt
-            if delta >= 0 then
-                if ns.guildLog.clearSeenEvent then
-                    ns.guildLog.clearSeenEvent("missing:" .. tostring(key))
-                end
-                local moneyDeltaText = nil
-                if s.missingMoneyBaseline ~= nil and s.money ~= nil and ns.helpers and ns.helpers.formatMoneyDelta then
-                    local moneyDelta = tonumber(s.money) - tonumber(s.missingMoneyBaseline)
-                    moneyDeltaText = ns.helpers.formatMoneyDelta(moneyDelta)
-                end
-                local msg = (ns.helpers.getShort(key) or key) .. " re-enabled SGLK after " .. formatDuration(delta)
-                if moneyDeltaText then
-                    msg = msg .. " (money change: " .. moneyDeltaText .. ")"
-                end
-                ns.guildLog.send(
-                    msg,
-                    {
-                        kind = "sync",
-                        broadcast = true,
-                        eventId = "reenabled:" .. tostring(key)
-                    }
-                )
-            end
+        if wasMissing then
+            maybeLogReenabled(key, s, nowStamp)
         end
+
         s._missing = nil
         s._missingSince = nil
         s._missingEventId = nil
         s.missingMoneyBaseline = nil
         s.missingMoneyAt = nil
-        u.active = true
+
+    elseif state == "DISABLED" then
+        s.online = true
+        if not wasOnline then
+            s.onlineAt = nowStamp
+        end
+
+        if not wasMissing then
+            markMissingState(key, s, u, nowStamp, true)
+        else
+            s.active = false
+            s.enabled = false
+            u.active = false
+            u.enabled = false
+        end
 
     elseif state == "OFFLINE" then
         s.online = false
@@ -149,6 +175,7 @@ function ADDON_STATUS.handle(sender, payload)
         s.active = false
         s._lastOfflineAt = nowStamp
         u.active = false
+        u.enabled = false
     end
 
     ns.db.addonStatus[key] = s

@@ -149,6 +149,64 @@ function ns.guildLog.clearSeenEvent(eventId)
     end
 end
 
+function ns.guildLog.exportRecent(limit)
+    if not ensureDB() then return {} end
+
+    limit = tonumber(limit) or 50
+    if limit < 1 then limit = 1 end
+    if limit > 100 then limit = 100 end
+
+    local out = {}
+    local src = ns.db.guildLog or {}
+
+    for i = 1, math.min(limit, #src) do
+        local entry = src[i]
+        if type(entry) == "table" and entry.message then
+            out[#out + 1] = {
+                time = entry.time,
+                sender = entry.sender,
+                message = entry.message,
+                kind = entry.kind,
+                eventId = entry.eventId,
+            }
+        end
+    end
+
+    return out
+end
+
+function ns.guildLog.importEntries(entries)
+    if not ensureDB() then return end
+    if type(entries) ~= "table" then return end
+
+    local changed = false
+
+    for _, entry in ipairs(entries) do
+        if type(entry) == "table" and entry.message then
+            local clean = {
+                time = entry.time or time(),
+                sender = entry.sender or "?",
+                message = tostring(entry.message or ""),
+                kind = entry.kind or "info",
+                eventId = entry.eventId or nil,
+            }
+
+            local id = makeId(clean)
+            if not seenCheckAndRemember(id) then
+                pushEntry(clean)
+                changed = true
+            end
+        end
+    end
+
+    if changed and ns.ui and ns.ui.updateGuildLog then
+        local ok, err = pcall(ns.ui.updateGuildLog)
+        if not ok and ns.log and ns.log.error then
+            ns.log.error("updateGuildLog failed: " .. tostring(err))
+        end
+    end
+end
+
 ns.guildLog.events = {}
 
 function ns.guildLog.events.info(msg)

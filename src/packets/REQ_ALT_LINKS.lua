@@ -1,16 +1,16 @@
 local addonName, ns = ...
 
-local ALT_LINKS_FULL = {}
+local REQ_ALT_LINKS = {}
 ns.packets = ns.packets or {}
-ns.packets.ALT_LINKS_FULL = ALT_LINKS_FULL
+ns.packets.REQ_ALT_LINKS = REQ_ALT_LINKS
 
-function ALT_LINKS_FULL.handle(sender, payload)
-    if not ns.sync or not ns.sync.altlinks or not ns.sync.altlinks.applyFull then
+function REQ_ALT_LINKS.handle(sender, payload)
+    if not ns.sync or not ns.sync.altlinks or not ns.sync.altlinks.handleRequest then
         return
     end
 
-    local ok, err = ns.sync.altlinks.applyFull(payload, sender)
-    if not ok and ns.log and ns.log.error then
-        ns.log.error("ALT_LINKS_FULL apply failed: " .. tostring(err))
+    local ok, err = ns.sync.altlinks.handleRequest(sender, payload)
+    if not ok and ns.log and ns.log.debug then
+        ns.log.debug("REQ_ALT_LINKS ignored: " .. tostring(err))
     end
 end

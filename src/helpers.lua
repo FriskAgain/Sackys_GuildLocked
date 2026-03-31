@@ -58,6 +58,17 @@ function helpers.getPlayerMoney()
     return copper
 end
 
+function helpers.formatMoney(copper)
+    copper = tonumber(copper) or 0
+    if copper < 0 then
+        copper = math.abs(copper)
+    end
+    local gold = math.floor(copper / 10000)
+    local silver = math.floor((copper % 10000) / 100)
+    local copperOnly = copper % 100
+    return string.format("%dg %ds %dc", gold, silver, copperOnly)
+end
+
 function helpers.formatMoneyDelta(copper)
     copper = tonumber(copper) or 0
 
@@ -371,6 +382,13 @@ function helpers.getAllAltGroups()
     return groups
 end
 
+function helpers.makeRequestId(prefix)
+    prefix = tostring(prefix or "REQ")
+    local stamp = (helpers.nowStamp and helpers.nowStamp()) or time()
+    local rand = math.random(1000, 9999)
+    return string.format("%s-%s-%d", prefix, tostring(stamp), rand)
+end
+
 local AceSerializer = LibStub("AceSerializer-3.0")
 local key = 42
 
@@ -505,21 +523,16 @@ function helpers.scanPlayerProfessions()
     --------------------------------------------------------------------
     -- 1) Broadcast ADDON_STATUS with profs (updates activeUsers/addonStatus/UI paths)
     --------------------------------------------------------------------
-    if ns.networking and ns.networking.SendToGuild and ns.globals and ns.globals.ADDONVERSION then
+    if ns.networking and ns.globals and ns.globals.ADDONVERSION then
         helpers._lastStatusBroadcast = helpers._lastStatusBroadcast or 0
         helpers._lastStatusSig = helpers._lastStatusSig or ""
         if sig ~= helpers._lastStatusSig or (now - helpers._lastStatusBroadcast) >= 30 then
             helpers._lastStatusBroadcast = now
             helpers._lastStatusSig = sig
 
-            ns.networking.SendToGuild("ADDON_STATUS", {
-                state = "ONLINE",
-                version = ns.globals.ADDONVERSION,
-                prof1 = prof.prof1,
-                prof1Skill = prof.prof1Skill,
-                prof2 = prof.prof2,
-                prof2Skill = prof.prof2Skill
-            })
+            if ns.networking.SendOnlineStatus then
+                ns.networking.SendOnlineStatus()
+            end
         end
     end
 

@@ -6,6 +6,7 @@ local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_LOGOUT")
+frame:RegisterEvent("PLAYER_MONEY")
 frame:RegisterEvent("AUCTION_HOUSE_SHOW")
 frame:RegisterEvent("TRADE_SHOW")
 frame:RegisterEvent("TRADE_ACCEPT_UPDATE")
@@ -74,6 +75,11 @@ local function ProfScanBurst()
     C_Timer.After(6.0, DelayedProfScan)
 end
 
+local function MarkRosterWarm(seconds)
+    seconds = tonumber(seconds) or 10
+    events._rosterWarmUntil = GetTime() + seconds
+end
+
 local function TryGuildInit()
     if didGuildInit then
         return true
@@ -101,18 +107,48 @@ local function TryGuildInit()
     ProfScanBurst()
     C_Timer.After(12, DelayedProfScan)
     C_Timer.After(25, DelayedProfScan)
-    local ver = ns.globals.ADDONVERSION or "?"
-    ns.networking.SendToGuild("ADDON_STATUS", {
-        state = "ONLINE",
-        version = ver
-    })
-
-    C_Timer.After(1, function()
+    C_Timer.After(0.5, function()
+        if ns.networking and ns.networking.SendOnlineStatus then
+            ns.networking.SendOnlineStatus()
+        end
+    end)
+    C_Timer.After(1.5, function()
+        if ns.networking and ns.networking.SendToGuild then
+            ns.networking.SendToGuild("REQ_USERS", {})
+            ns.networking.SendToGuild("REQ_VERSION", {})
+        end
+    end)
+    C_Timer.After(2.5, function()
         if ns.sync and ns.sync.altlinks and ns.sync.altlinks.requestFull then
             ns.sync.altlinks.requestFull(true)
         end
     end)
+    C_Timer.After(3.0, function()
+        if ns.helpers and ns.helpers.playerCanViewGuildLog and ns.helpers.playerCanViewGuildLog() then
+            if ns.networking and ns.networking.SendToGuild then
+                local requestId = ns.helpers and ns.helpers.makeRequestId and ns.helpers.makeRequestId("GLOG") or (tostring(time()) .. "-" .. tostring(math.random(1000, 9999)))
 
+                ns.networking.SendToGuild("REQ_GUILD_LOG", { 
+                    limit = 30,
+                    requestId = requestId,
+                })
+            end
+        end
+    end)
+    C_Timer.After(3.5, function()
+        if ns.ui and ns.ui.refresh then
+            ns.ui.refresh()
+        end
+    end)
+    C_Timer.After(5.0, function()
+        if IsInGuild() then
+            RequestGuildRoster()
+            TryGuildInit()
+            if ns.ui and ns.ui.refresh then
+                ns.ui.refresh()
+            end
+        end
+    end)
     return true
 end
 
@@ -128,6 +164,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         ns.helpers.scanPlayerProfessions()
         ns.ui.initialize()
         ns.components.minimapbutton.create()
+        MarkRosterWarm(15)
         C_Timer.After(2, function()
             if IsInGuild() and GuildRoster then
                 GuildRoster()
@@ -153,26 +190,30 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
 
     elseif event == "PLAYER_GUILD_UPDATE" then
         if IsInGuild() then
-            if GuildRoster then
-                GuildRoster()
-            end
+            MarkRosterWarm(10)
+            RequestGuildRoster()
             C_Timer.After(1, function()
                 if ns.globals and ns.globals.update then
                     ns.globals.update()
                 end
-                if GuildRoster then
-                    GuildRoster()
-                end
+                RequestGuildRoster()
                 TryGuildInit()
                 if ns.ui and ns.ui.refresh then
                     ns.ui.refresh()
                 end
             end)
             C_Timer.After(3, function()
-                if GuildRoster then
-                    GuildRoster()
-                end
+                RequestGuildRoster()
                 TryGuildInit()
+                if ns.networking and ns.networking.SendOnlineStatus then
+                    ns.networking.SendOnlineStatus()
+                end
+                if ns.ui and ns.ui.refresh then
+                    ns.ui.refresh()
+                end
+            end)
+            C_Timer.After(6, function()
+                RequestGuildRoster()
                 if ns.ui and ns.ui.refresh then
                     ns.ui.refresh()
                 end
@@ -212,6 +253,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         return
 
     elseif event == "GUILD_ROSTER_UPDATE" then
+        MarkRosterWarm(10)
         ns.globals.update()
 
         if not IsInGuild() then
@@ -267,11 +309,33 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         return
 
     elseif event == "PLAYER_ENTERING_WORLD" then
+        MarkRosterWarm(12)
         C_Timer.After(2, function()
             if IsInGuild() then
-                ns.log.debug("Refreshing guild roster after entering world")
-                if GuildRoster then
-                    GuildRoster()
+                ns.log.debug("Refreshing guild roster after entering world (2s)")
+                RequestGuildRoster()
+            end
+        end)
+        C_Timer.After(5, function()
+            if IsInGuild() then
+                ns.log.debug("Refreshing guild roster after entering world (5s)")
+                RequestGuildRoster()
+                TryGuildInit()
+                if ns.ui and ns.ui.refresh then
+                    ns.ui.refresh()
+                end
+            end
+        end)
+        C_Timer.After(8, function()
+            if IsInGuild() then
+                ns.log.debug("Refreshing guild roster after entering world (8s)")
+                RequestGuildRoster()
+                TryGuildInit()
+                if ns.networking and ns.networking.SendOnlineStatus then
+                    ns.networking.SendOnlineStatus()
+                end
+                if ns.ui and ns.ui.refresh then
+                    ns.ui.refresh()
                 end
             end
         end)
