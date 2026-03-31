@@ -20,8 +20,9 @@ local function maybeLogReenabled(key, s, nowStamp)
         return
     end
 
-    local missingEventId = s._missingEventId or ("missing:" .. tostring(key) .. ":" .. tostring(s.disabledAt or nowStamp))
-    local reenabledEventId = "reenabled:" .. tostring(key) .. ":" .. tostring(s.disabledAt or nowStamp)
+    local cycleId = tostring(s.disabledAt or nowStamp)
+    local missingEventId = s._missingEventId or ("missing:" .. tostring(key) .. ":" .. cycleId)
+    local reenabledEventId = "reenabled:" .. tostring(key) .. ":" .. cycleId
     if ns.guildLog.clearSeenEvent then
         ns.guildLog.clearSeenEvent(missingEventId)
     end
@@ -37,6 +38,9 @@ local function maybeLogReenabled(key, s, nowStamp)
         msg = msg .. " (money change: " .. moneyDeltaText .. ")"
     end
 
+    if ns.log and ns.log.debug then
+        ns.log.debug("Reenabled eventId = " .. tostring(reenabledEventId))
+    end
     ns.guildLog.send(msg, {
         kind = "sync",
         broadcast = true,
@@ -49,8 +53,9 @@ local function markMissingState(key, s, u, nowStamp, intentional)
     s._missingSince = nowStamp
     s.disabledAt = nowStamp
 
-    local missingEventId = "missing:" .. tostring(key) .. ":" .. tostring(s.disabledAt or nowStamp)
-    local reenabledEventId = "reenabled:" .. tostring(key) .. ":" .. tostring(s.disabledAt or nowStamp)
+    local cycleId = tostring(s.disabledAt or nowStamp)
+    local missingEventId = "missing:" .. tostring(key) .. ":" .. cycleId
+    local reenabledEventId = "reenabled:" .. tostring(key) .. ":" .. cycleId
 
     s._missingEventId = missingEventId
 

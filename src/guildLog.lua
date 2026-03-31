@@ -81,7 +81,7 @@ function ns.guildLog.send(message, opts)
     local entry = {
         message = tostring(message),
         sender = (ns.globals and ns.globals.CHARACTERNAME) or UnitName("player") or "?",
-        time = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time,
+        time = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time(),
         kind = opts.kind or "info",
         eventId = opts.eventId or nil,
     }
