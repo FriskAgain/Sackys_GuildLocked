@@ -246,7 +246,7 @@ function networking.initialize()
     -- 6. Heartbeat (keeps others updated)
     -------------------------------------------------
 
-    C_Timer.NewTicker(30, function()
+    C_Timer.NewTicker(15, function()
         local nowSession = GetTime()
         local nowStamp = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
         local key = (ns.helpers and ns.helpers.getKey and ns.globals and ns.globals.CHARACTERNAME)
@@ -324,66 +324,85 @@ function networking.initialize()
         local GRACE = 40
         local MISS_STRIKES = 1
 
-        for key, _ in pairs (onlineSet) do
+        for key, _ in pairs(onlineSet) do
             if key ~= me then
                 local s = ns.db.addonStatus[key]
                 if s and s.seen == true then
-                    if not s._onlineSince then
-                        s._onlineSince = nowSession
+                    local recentOffline = false
+                    if s.online == false and s.offlineAt then
+                        local offlineAge = nowStamp - (tonumber(s.offlineAt) or 0)
+                        if offlineAge >= 0 and offlineAge <= (GRACE + 10) then
+                            recentOffline = true
+                        end
+                    end
+                    if recentOffline then
+                        s._onlineSince = nil
                         s._missStrikes = 0
                         ns.db.addonStatus[key] = s
                     else
-                        local u = networking.activeUsers[key]
-                        local lastSeen = (u and u.lastSeen) or 0
-                        local sessionAge = nowSession - (s._onlineSince or nowSession)
-                        local missing = (lastSeen == 0) or ((nowSession - lastSeen) > GRACE)
-
-                        if sessionAge < GRACE then
+                        if not s._onlineSince then
+                            s._onlineSince = nowSession
                             s._missStrikes = 0
+                            ns.db.addonStatus[key] = s
                         else
-                            if missing then
-                                s._missStrikes = (s._missStrikes or 0) +1
-                                if s._missStrikes >= MISS_STRIKES then
-                                    if not s._missing then
-                                        s._missing = true
-                                        s._missingSince = nowStamp
-                                        networking.activeUsers[key] = networking.activeUsers[key] or {}
-                                        networking.activeUsers[key].active = false
-                                        networking.activeUsers[key].enabled = false
-                                        networking.activeUsers[key].lastSeen = networking.activeUsers[key].lastSeen or 0
-                                        s.active = false
-                                        s.enabled = false
-                                        s.disabledAt = nowStamp
-                                        s.missingMoneyBaseline = tonumber(s.money) or 0
-                                        s.missingMoneyAt = nowStamp
-                                        if s.online ~= true then
-                                            s.online = true
-                                            s.onlineAt = s.onlineAt or nowStamp
+                            local u = networking.activeUsers[key]
+                            local lastSeen = (u and u.lastSeen) or 0
+                            local sessionAge = nowSession - (s._onlineSince or nowSession)
+                            local missing = (lastSeen == 0) or ((nowSession - lastSeen) > GRACE)
+                            if sessionAge < GRACE then
+                                s._missStrikes = 0
+                            else
+                                if missing then
+                                    s._missStrikes = (s._missStrikes or 0) + 1
+                                    if s._missStrikes >= MISS_STRIKES then
+                                        if not s._missing then
+                                            s._missing = true
+                                            s._missingSince = nowStamp
+
+                                            networking.activeUsers[key] = networking.activeUsers[key] or {}
+                                            networking.activeUsers[key].active = false
+                                            networking.activeUsers[key].enabled = false
+                                            networking.activeUsers[key].lastSeen = networking.activeUsers[key].lastSeen or 0
+
+                                            s.active = false
+                                            s.enabled = false
+                                            s.disabledAt = nowStamp
+                                            s.missingMoneyBaseline = tonumber(s.money) or 0
+                                            s.missingMoneyAt = nowStamp
+
+                                            if s.online ~= true then
+                                                s.online = true
+                                                s.onlineAt = s.onlineAt or nowStamp
+                                            end
+
+                                            local cycleId = tostring(s.disabledAt or nowStamp)
+                                            local missingEventId = "missing:" .. tostring(key) .. ":" .. cycleId
+                                            s._missingEventId = missingEventId
+
+                                            if ns.guildLog and ns.guildLog.send then
+                                                ns.guildLog.send(
+                                                    (ns.helpers.getShort(key) or key) .. " is online without SGLK enabled",
+                                                    {
+                                                        kind = "warn",
+                                                        broadcast = true,
+                                                        eventId = missingEventId
+                                                    }
+                                                )
+                                            end
                                         end
-                                        local missingEventId = "missing:" .. tostring(key) .. ":" .. tostring(s.disabledAt or nowStamp)
-                                        s._missingEventId = missingEventId
-                                        if ns.guildLog and ns.guildLog.clearSeenEvent then
-                                            local reenabledEventId = "reenabled:" .. tostring(key) .. ":" .. tostring(s.disabledAt or nowStamp)
-                                            ns.guildLog.clearSeenEvent(reenabledEventId)
-                                        end
-                                        ns.guildLog.send((ns.helpers.getShort(key) or key) .. " is online without SGLK enabled", {
-                                            kind = "warn",
-                                            broadcast = true,
-                                            eventId = missingEventId
-                                        })
+                                    end
+                                else
+                                    s._missStrikes = 0
+                                    if s.online ~= true then
+                                        s.online = true
+                                        s.onlineAt = nowStamp
                                     end
                                 end
-                            else
-                                s._missStrikes = 0
-                                if s.online ~= true then
-                                    s.online = true
-                                    s.onlineAt = nowStamp
-                                end
                             end
-                        end
-                        ns.db.addonStatus[key] = s
-                        if ns.ui and ns.ui.refresh then
-                            ns.ui.refresh()
+                            ns.db.addonStatus[key] = s
+                            if ns.ui and ns.ui.refresh then
+                                ns.ui.refresh()
+                            end
                         end
                     end
                 end

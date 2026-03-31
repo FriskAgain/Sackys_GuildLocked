@@ -23,9 +23,6 @@ local function maybeLogReenabled(key, s, nowStamp)
     local cycleId = tostring(s.disabledAt or nowStamp)
     local missingEventId = s._missingEventId or ("missing:" .. tostring(key) .. ":" .. cycleId)
     local reenabledEventId = "reenabled:" .. tostring(key) .. ":" .. cycleId
-    if ns.guildLog.clearSeenEvent then
-        ns.guildLog.clearSeenEvent(missingEventId)
-    end
 
     local moneyDeltaText = nil
     if s.missingMoneyBaseline ~= nil and s.money ~= nil and ns.helpers and ns.helpers.formatMoneyDelta then
@@ -67,10 +64,6 @@ local function markMissingState(key, s, u, nowStamp, intentional)
 
     u.active = false
     u.enabled = false
-
-    if ns.guildLog and ns.guildLog.clearSeenEvent then
-        ns.guildLog.clearSeenEvent(reenabledEventId)
-    end
 
     if ns.guildLog and ns.guildLog.send then
         local msg

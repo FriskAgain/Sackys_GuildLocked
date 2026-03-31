@@ -414,15 +414,41 @@ function ui.ensureAltLinksUI()
     mainBox:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -52)
     mainBox:SetAutoFocus(false)
     mainBox:SetMaxLetters(80)
+    mainBox:SetScript("OnEnterPressed", function(self)
+        self:ClearFocus()
+    end)
+    mainBox:SetScript("OnEscapePressed", function(self)
+        self:ClearFocus()
+    end)
 
     local altBox = CreateFrame("EditBox", "SGLKAltLinksAltBox", frame, "InputBoxTemplate")
     altBox:SetSize(220, 24)
     altBox:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -102)
     altBox:SetAutoFocus(false)
     altBox:SetMaxLetters(80)
+    altBox:SetScript("OnEnterPressed", function(self)
+        self:ClearFocus()
+    end)
+    altBox:SetScript("OnEscapePressed", function(self)
+        self:ClearFocus()
+    end)
 
     ui._altLinksMainBox = mainBox
     ui._altLinksAltBox = altBox
+    local function clearAltLinkFocus()
+        if ui._altLinksMainBox then
+            ui._altLinksMainBox:ClearFocus()
+            if ui._altLinksMainBox.HighlightText then
+                ui._altLinksMainBox:HighlightText(0, 0)
+            end
+        end
+        if ui._altLinksAltBox then
+            ui._altLinksAltBox:ClearFocus()
+            if ui._altLinksAltBox.HighlightText then
+                ui._altLinksAltBox:HighlightText(0, 0)
+            end
+        end
+    end
 
     local createBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     createBtn:SetSize(110, 24)
@@ -445,7 +471,7 @@ function ui.ensureAltLinksUI()
     refreshBtn:SetText("Refresh")
 
     local scrollFrame = CreateFrame("ScrollFrame", "SGLKAltLinksScrollFrame", frame, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -145)
+    scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -155)
     scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -34, 16)
 
     local editBox = CreateFrame("EditBox", "SGLKAltLinksDisplayBox", scrollFrame)
@@ -466,6 +492,7 @@ function ui.ensureAltLinksUI()
     end
 
     createBtn:SetScript("OnClick", function()
+        clearAltLinkFocus()
         local mainText = ui._altLinksMainBox and ui._altLinksMainBox:GetText() or ""
         if not mainText or mainText == "" then
             if ns.log and ns.log.error then
@@ -491,6 +518,7 @@ function ui.ensureAltLinksUI()
     end)
 
     addBtn:SetScript("OnClick", function()
+        clearAltLinkFocus()
         local mainText = ui._altLinksMainBox and ui._altLinksMainBox:GetText() or ""
         local altText = ui._altLinksAltBox and ui._altLinksAltBox:GetText() or ""
 
@@ -518,6 +546,7 @@ function ui.ensureAltLinksUI()
     end)
 
     removeBtn:SetScript("OnClick", function()
+        clearAltLinkFocus()
         local targetText = ui._altLinksAltBox and ui._altLinksAltBox:GetText() or ""
         if targetText == "" then
             targetText = ui._altLinksMainBox and ui._altLinksMainBox:GetText() or ""
@@ -546,7 +575,10 @@ function ui.ensureAltLinksUI()
         end
     end)
 
-    refreshBtn:SetScript("OnClick", refreshDisplay)
+    refreshBtn:SetScript("OnClick", function()
+        clearAltLinkFocus()
+         refreshDisplay()
+    end)
 end
 
 function ui.updateAltLinksUI()
@@ -559,9 +591,11 @@ function ui.updateAltLinksUI()
     if #groups == 0 then
         lines[#lines + 1] = "No alt groups defined."
     else
-        for _, group in ipairs(groups) do
+        for idx, group in ipairs(groups) do
             local mainShort = (ns.helpers.getShort and ns.helpers.getShort(group.main)) or group.main
-            lines[#lines + 1] = mainShort .. " [" .. tostring(group.main) .. "]"
+            lines[#lines + 1] = string.rep("=", 58)
+            lines[#lines + 1] = "MAIN: " .. mainShort
+            lines[#lines + 1] = "KEY:  " .. tostring(group.main)
 
             local altKeys = {}
             if group.alts then
@@ -572,21 +606,25 @@ function ui.updateAltLinksUI()
             table.sort(altKeys)
 
             if #altKeys == 0 then
-                lines[#lines + 1] = "  - (no alts)"
+                lines[#lines + 1] = "ALTS: (none)"
             else
+                lines[#lines + 1] = "ALTS:"
                 for _, altKey in ipairs(altKeys) do
                     local altShort = (ns.helpers.getShort and ns.helpers.getShort(altKey)) or altKey
-                    lines[#lines + 1] = "  - " .. altShort .. " [" .. altKey .. "]"
+                    lines[#lines + 1] = "  • " .. altShort .. " [" .. tostring(altKey) .. "]"
                 end
             end
 
-            lines[#lines + 1] = ""
+            if idx < #groups then
+                lines[#lines + 1] = ""
+            end
         end
     end
 
     local text = table.concat(lines, "\n")
     ui._altLinksDisplayBox:SetText(text)
     ui._altLinksDisplayBox:SetCursorPosition(0)
+    ui._altLinksDisplayBox:ClearFocus()
 end
 
 function ui.toggleAltLinks()
