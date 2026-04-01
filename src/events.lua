@@ -164,27 +164,17 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         ns.helpers.scanPlayerProfessions()
         ns.ui.initialize()
         ns.components.minimapbutton.create()
+
         MarkRosterWarm(15)
+
         C_Timer.After(2, function()
-            if IsInGuild() and GuildRoster then
-                GuildRoster()
+            if IsInGuild() then
+                RequestGuildRoster()
+                TryGuildInit()
+                SafeUIRefresh()
             end
         end)
-        C_Timer.After(4, function()
-            if IsInGuild() and GuildRoster then
-                GuildRoster()
-            end
-        end)
-        C_Timer.After(7, function()
-            if IsInGuild() and GuildRoster then
-                GuildRoster()
-            end
-            TryGuildInit()
-            if ns.ui and ns.ui.refresh then
-                ns.ui.refresh()
-            end
-        end)
-        
+
         self:UnregisterEvent("PLAYER_LOGIN")
         return
 
@@ -192,31 +182,19 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         if IsInGuild() then
             MarkRosterWarm(10)
             RequestGuildRoster()
-            C_Timer.After(1, function()
+
+            C_Timer.After(1.5, function()
                 if ns.globals and ns.globals.update then
                     ns.globals.update()
                 end
                 RequestGuildRoster()
                 TryGuildInit()
-                if ns.ui and ns.ui.refresh then
-                    ns.ui.refresh()
-                end
+                SafeUIRefresh()
             end)
-            C_Timer.After(3, function()
+
+            C_Timer.After(4, function()
                 RequestGuildRoster()
-                TryGuildInit()
-                if ns.networking and ns.networking.SendOnlineStatus then
-                    ns.networking.SendOnlineStatus()
-                end
-                if ns.ui and ns.ui.refresh then
-                    ns.ui.refresh()
-                end
-            end)
-            C_Timer.After(6, function()
-                RequestGuildRoster()
-                if ns.ui and ns.ui.refresh then
-                    ns.ui.refresh()
-                end
+                SafeUIRefresh()
             end)
         else
             didGuildInit = false
@@ -310,35 +288,23 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
 
     elseif event == "PLAYER_ENTERING_WORLD" then
         MarkRosterWarm(12)
-        C_Timer.After(2, function()
+
+        C_Timer.After(3, function()
             if IsInGuild() then
-                ns.log.debug("Refreshing guild roster after entering world (2s)")
-                RequestGuildRoster()
-            end
-        end)
-        C_Timer.After(5, function()
-            if IsInGuild() then
-                ns.log.debug("Refreshing guild roster after entering world (5s)")
                 RequestGuildRoster()
                 TryGuildInit()
-                if ns.ui and ns.ui.refresh then
-                    ns.ui.refresh()
-                end
+                SafeUIRefresh()
             end
         end)
-        C_Timer.After(8, function()
+
+        C_Timer.After(6, function()
             if IsInGuild() then
-                ns.log.debug("Refreshing guild roster after entering world (8s)")
                 RequestGuildRoster()
                 TryGuildInit()
-                if ns.networking and ns.networking.SendOnlineStatus then
-                    ns.networking.SendOnlineStatus()
-                end
-                if ns.ui and ns.ui.refresh then
-                    ns.ui.refresh()
-                end
+                SafeUIRefresh()
             end
         end)
+
         return
 
     elseif event == "AUCTION_HOUSE_SHOW" then
