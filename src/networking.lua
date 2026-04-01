@@ -219,7 +219,7 @@ function networking.initialize()
     C_Timer.NewTicker(15, function()
 
         local now = GetTime()
-        local timeout = 35
+        local timeout = 60
 
         for name, data in pairs(networking.activeUsers) do
 
@@ -246,7 +246,7 @@ function networking.initialize()
     -- 6. Heartbeat (keeps others updated)
     -------------------------------------------------
 
-    C_Timer.NewTicker(15, function()
+    C_Timer.NewTicker(30, function()
         local nowSession = GetTime()
         local nowStamp = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
         local key = (ns.helpers and ns.helpers.getKey and ns.globals and ns.globals.CHARACTERNAME)
@@ -320,8 +320,8 @@ function networking.initialize()
             and ns.helpers.getKey(ns.globals.CHARACTERNAME) or nil
         local nowSession = GetTime()
         local nowStamp = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
-        local HEARTBEAT = 15
-        local GRACE = 40
+        local HEARTBEAT = 30
+        local GRACE = 90
         local MISS_STRIKES = 1
 
         for key, _ in pairs(onlineSet) do
