@@ -70,9 +70,8 @@ local function DelayedProfScan()
 end
 
 local function ProfScanBurst()
-    C_Timer.After(1.0, DelayedProfScan)
-    C_Timer.After(3.0, DelayedProfScan)
-    C_Timer.After(6.0, DelayedProfScan)
+    C_Timer.After(12, DelayedProfScan)
+    C_Timer.After(25, DelayedProfScan)
 end
 
 local function MarkRosterWarm(seconds)
@@ -108,7 +107,7 @@ local function TryGuildInit()
     C_Timer.After(12, DelayedProfScan)
     C_Timer.After(25, DelayedProfScan)
     C_Timer.After(0.5, function()
-        if ns.networking and ns.networking.SendOnlineStatus then
+        if ns.networking and ns.networking.SendOnleStatus then
             ns.networking.SendOnlineStatus()
         end
     end)
@@ -136,17 +135,13 @@ local function TryGuildInit()
         end
     end)
     C_Timer.After(3.5, function()
-        if ns.ui and ns.ui.refresh then
-            ns.ui.refresh()
-        end
+        SafeUIRefresh()
     end)
     C_Timer.After(5.0, function()
         if IsInGuild() then
             RequestGuildRoster()
             TryGuildInit()
-            if ns.ui and ns.ui.refresh then
-                ns.ui.refresh()
-            end
+            SafeUIRefresh()
         end
     end)
     return true
