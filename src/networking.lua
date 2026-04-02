@@ -235,7 +235,7 @@ function networking.initialize()
                 end
 
                 if ns.ui and ns.ui.refresh then
-                    ns.ui.refresh()
+                    ns.ui.requestRefresh()
                 end
                 ns.log.debug(name .. " marked inactive (timeout)")
             end
@@ -321,7 +321,7 @@ function networking.initialize()
         local nowSession = GetTime()
         local nowStamp = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
         local HEARTBEAT = 30
-        local GRACE = 90
+        local GRACE = 120
         local MISS_STRIKES = 1
 
         for key, _ in pairs(onlineSet) do
@@ -410,7 +410,7 @@ function networking.initialize()
                             end
                             ns.db.addonStatus[key] = s
                             if ns.ui and ns.ui.refresh then
-                                ns.ui.refresh()
+                                ns.ui.requestRefresh()
                             end
                         end
                     end
@@ -600,7 +600,7 @@ function networking.SendAddonStatus(stateOverride)
     })
 
     if ns.ui and ns.ui.refresh then
-        ns.ui.refresh()
+        ns.ui.requestRefresh()
     end
 end
 

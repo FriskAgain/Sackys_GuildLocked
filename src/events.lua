@@ -24,6 +24,7 @@ frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 local didGuildInit = false
+local pruneRanThisSession = false
 local inviteReplyCooldown = {}
 local INVITE_REPLY_COOLDOWN = 300
 
@@ -38,17 +39,9 @@ end
 local uiRefreshPending = false
 
 local function SafeUIRefresh()
-    if uiRefreshPending then return end
-    if not (ns.ui and ns.ui.refresh) then return end
-
-    uiRefreshPending = true
-
-    C_Timer.After(0.3, function()
-        uiRefreshPending = false
-        if ns.ui and ns.ui.refresh then
-            ns.ui.refresh()
-        end
-    end)
+    if ns.ui and ns.ui.requestRefresh then
+        ns.ui.requestRefresh(0.3)
+    end
 end
 
 local guildRosterRefreshPending = false
@@ -79,6 +72,100 @@ local function MarkRosterWarm(seconds)
     events._rosterWarmUntil = GetTime() + seconds
 end
 
+local STALE_DAYS = 21
+local STALE_SECONDS = STALE_DAYS * 24 * 60 * 60
+
+local function bestCharacterTimestamp(row)
+    if type(row) ~= "table" then
+        return 0
+    end
+
+    local candidates = {
+        tonumber(row.lastSeen) or 0,
+        tonumber(row.offlineAt) or 0,
+        tonumber(row.moneyUpdatedAt) or 0,
+        tonumber(row.onlineAt) or 0,
+        tonumber(row.enabledAt) or 0,
+        tonumber(row.disabledAt) or 0,
+        tonumber(row._lastOfflineAt) or 0,
+    }
+
+    local best = 0
+    for _, v in ipairs(candidates) do
+        if v > best then
+            best = v
+        end
+    end
+    return best
+end
+
+local function pruneStaleCharacterData()
+    if not ns.db then return end
+
+    local nowStamp = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
+    local cutoff = nowStamp - STALE_SECONDS
+
+    local prunedAddonStatus = 0
+    local prunedChars = 0
+
+    ns.db.addonStatus = ns.db.addonStatus or {}
+    for key, row in pairs(ns.db.addonStatus) do
+        if type(key) == "string" and type(row) == "table" then
+            local ts = bestCharacterTimestamp(row)
+            if ts > 0 and ts < cutoff then
+                ns.db.addonStatus[key] = nil
+                if ns.networking and ns.networking.activeUsers then
+                    ns.networking.activeUsers[key] = nil
+                end
+                prunedAddonStatus = prunedAddonStatus + 1
+            end
+        end
+    end
+
+    ns.db.chars = ns.db.chars or {}
+    for key, row in pairs(ns.db.chars) do
+        if type(key) == "string" and type(row) == "table" then
+            local ts = bestCharacterTimestamp(row)
+            if ts == 0 then
+                ts = tonumber(row.updatedAt) or tonumber(row.lastSeen) or 0
+            end
+
+            if ts > 0 and ts < cutoff then
+                ns.db.chars[key] = nil
+                prunedChars = prunedChars + 1
+            end
+        end
+    end
+
+    if ns.db.guildLogMeta and type(ns.db.guildLogMeta) == "table" then
+        ns.db.guildLogMeta._seen = ns.db.guildLogMeta._seen or {}
+        ns.db.guildLogMeta._seenOrder = ns.db.guildLogMeta._seenOrder or {}
+
+        while #ns.db.guildLogMeta._seenOrder > 400 do
+            local old = table.remove(ns.db.guildLogMeta._seenOrder, 1)
+            if old then
+                ns.db.guildLogMeta._seen[old] = nil
+            end
+        end
+
+        if ns.db.guildLogMeta._statusLocks then
+            for lockId, expiresAt in pairs(ns.db.guildLogMeta._statusLocks) do
+                if type(expiresAt) ~= "number" or expiresAt <= nowStamp then
+                    ns.db.guildLogMeta._statusLocks[lockId] = nil
+                end
+            end
+        end
+    end
+
+    if (prunedAddonStatus > 0 or prunedChars > 0) and ns.log and ns.log.info then
+        ns.log.info(
+            "Pruned stale data older than " .. tostring(STALE_DAYS) .. " days " ..
+            "(addonStatus=" .. tostring(prunedAddonStatus) ..
+            ", chars=" .. tostring(prunedChars) .. ")"
+        )
+    end
+end
+
 local function TryGuildInit()
     if didGuildInit then
         return true
@@ -102,6 +189,10 @@ local function TryGuildInit()
     ns.sync.base.initialize()
     ns.sync.mailexception.initialize()
     ns.sync.altlinks.initialize()
+    if not pruneRanThisSession then
+        pruneRanThisSession = true
+        pruneStaleCharacterData()
+    end
 
     ProfScanBurst()
     C_Timer.After(12, DelayedProfScan)

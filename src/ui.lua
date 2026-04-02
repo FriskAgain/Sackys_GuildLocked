@@ -1,6 +1,18 @@
 local addonName, ns = ...
 local ui = {}
 ns.ui = ui
+function ui.requestRefresh(delay)
+    delay = tonumber(delay) or 0.25
+    if ui._refreshQueued then return end
+    ui._refreshQueued = true
+
+    C_Timer.After(delay, function()
+        ui._refreshQueued = false
+        if ui.refresh then
+            ui.refresh()
+        end
+    end)
+end
 ui._profReqLast = ui._profReqLast or {}
 ui._profReqCooldown = 60 -- seconds per player
 
