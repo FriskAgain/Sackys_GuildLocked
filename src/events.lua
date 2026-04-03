@@ -63,8 +63,11 @@ local function DelayedProfScan()
 end
 
 local function ProfScanBurst()
-    C_Timer.After(12, DelayedProfScan)
-    C_Timer.After(25, DelayedProfScan)
+    C_Timer.After(1.0, DelayedProfScan)
+    C_Timer.After(3.0, DelayedProfScan)
+    C_Timer.After(6.0, DelayedProfScan)
+    C_Timer.After(12.0, DelayedProfScan)
+    C_Timer.After(25.0, DelayedProfScan)
 end
 
 local function MarkRosterWarm(seconds)
@@ -195,8 +198,6 @@ local function TryGuildInit()
     end
 
     ProfScanBurst()
-    C_Timer.After(12, DelayedProfScan)
-    C_Timer.After(25, DelayedProfScan)
     C_Timer.After(0.5, function()
         if ns.networking and ns.networking.SendOnleStatus then
             ns.networking.SendOnlineStatus()
@@ -319,6 +320,12 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
     elseif event == "GUILD_ROSTER_UPDATE" then
         MarkRosterWarm(10)
         ns.globals.update()
+        if ns.helpers and ns.helpers.invalidateGuildRosterCache then
+            ns.helpers.invalidateGuildRosterCache()
+        end
+        if ns.helpers and ns.helpers.rebuildGuildRosterCache then
+            ns.helpers.rebuildGuildRosterCache()
+        end
 
         if not IsInGuild() then
             return

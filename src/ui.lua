@@ -188,6 +188,7 @@ function ui.toggleWindow()
     else
         ui.frame.frame:Show()
         ui.frame.frame:Raise()
+        ui._dirtyWhileHidden = false
 
         local function tryBuildAndRefresh(attempt)
             attempt = attempt or 1
@@ -222,6 +223,11 @@ end
 function ui.refresh()
     if not ui.frame then return end
     if ui._refreshPending then return end
+    if not ui.frame.frame:IsShown() then
+        ui._dirtyWhileHidden = true
+        return
+    end
+    ui._dirtyWhileHidden = false
 
     ui._refreshPending = true
 
@@ -231,16 +237,17 @@ function ui.refresh()
         local showOnlineOnly = false
 
         ui.dataBuffer = ui.updateMemberList(showOnlineOnly)
+        ui._tableDataRevision = (ui._tableDataRevision or 0) + 1
 
         local guildCount = (GetNumGuildMembers and GetNumGuildMembers()) or 0
         local rosterEmpty = (guildCount == 0) or (#(ui.dataBuffer or {}) == 0)
         ui._rosterRetryCount = ui._rosterRetryCount or 0
         if IsInGuild and IsInGuild() and rosterEmpty then
-            if ui._rosterRetryCount < 10 then
+            if ui._rosterRetryCount < 4 then
                 ui._rosterRetryCount = ui._rosterRetryCount + 1
 
                 if ns.log and ns.log.info then
-                    ns.log.info("Roster Retry #" .. tostring(ui._rosterRetryCount) .. " (guildCount=" .. tostring(guildCount) .. ", rows=" .. tostring(#(ui.dataBuffer or {})) .. ")")
+                    ns.log.debug("Roster Retry #" .. tostring(ui._rosterRetryCount) .. " (guildCount=" .. tostring(guildCount) .. ", rows=" .. tostring(#(ui.dataBuffer or {})) .. ")")
                 end
                 if GuildRoster then
                     GuildRoster()
@@ -273,14 +280,16 @@ function ui.refresh()
             local w = ui.memberTable.container:GetWidth() or 0
             if w > 0 then
                 ui.memberTable.data = ui.dataBuffer or {}
-                ui.memberTable:refresh(true)
+                ui.memberTable.dataRevision = ui._tableDataRevision or 0
+                ui.memberTable:refresh()
             else
                 C_Timer.After(0.1, function()
                     if ns.ui and ns.ui.memberTable and ns.ui.memberTable.container then
                         local retryW = ns.ui.memberTable.container:GetWidth() or 0
                         if retryW > 0 then
                             ns.ui.memberTable.data = ns.ui.dataBuffer or {}
-                            ns.ui.memberTable:refresh(true)
+                            ui.memberTable.dataRevision = ui._tableDataRevision or 0
+                            ns.ui.memberTable:refresh()
                         end
                     end
                 end)
@@ -516,7 +525,7 @@ function ui.ensureAltLinksUI()
         local ok, err = ns.helpers.createAltGroup(mainText)
         if ok then
             if ns.log and ns.log.info then
-                ns.log.info("Created alt group for " .. tostring(mainText))
+                ns.log.debug("Created alt group for " .. tostring(mainText))
             end
             if ns.sync and ns.sync.altlinks and ns.sync.altlinks.broadcastFull then
                 ns.sync.altlinks.broadcastFull(true)
@@ -544,7 +553,7 @@ function ui.ensureAltLinksUI()
         local ok, err = ns.helpers.addAltLink(mainText, altText)
         if ok then
             if ns.log and ns.log.info then
-                ns.log.info("Linked alt " .. tostring(altText) .. " to main " .. tostring(mainText))
+                ns.log.debug("Linked alt " .. tostring(altText) .. " to main " .. tostring(mainText))
             end
             if ns.sync and ns.sync.altlinks and ns.sync.altlinks.broadcastFull then
                 ns.sync.altlinks.broadcastFull(true)
@@ -574,7 +583,7 @@ function ui.ensureAltLinksUI()
         local ok, err = ns.helpers.removeCharacterFromAltLinks(targetText)
         if ok then
             if ns.log and ns.log.info then
-                ns.log.info("Removed " .. tostring(targetText) .. " from alt links.")
+                ns.log.debug("Removed " .. tostring(targetText) .. " from alt links.")
             end
             if ns.sync and ns.sync.altlinks and ns.sync.altlinks.broadcastFull then
                 ns.sync.altlinks.broadcastFull(true)
@@ -746,12 +755,16 @@ function ui.updateMemberList(showOnlineOnly)
         local liveLastSeen = live and live.lastSeen or nil
         local liveRecent = (liveLastSeen and ((GetTime() - liveLastSeen) <= 120)) or false
         local liveActive = (live and live.active == true)
+        local savedActive = (saved and saved.active == true)
+        local savedEnabled = (saved and saved.enabled == true)
 
         if not online then
             addonState = "—"
         elseif savedMissing then
             addonState = false
         elseif liveRecent and liveActive then
+            addonState = true
+        elseif savedActive or savedEnabled then
             addonState = true
         else
             addonState = false

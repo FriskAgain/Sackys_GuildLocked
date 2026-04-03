@@ -56,6 +56,7 @@ function networking.initialize()
     -- Guild online cache
     networking.onlineSet = networking.onlineSet or {}
 
+    local checkMissingAddonUsers
     local function refreshOnlineSet()
         wipe(networking.onlineSet)
         if not IsInGuild() then return end
@@ -73,8 +74,14 @@ function networking.initialize()
             end
         end
     end
-    refreshOnlineSet()
-    C_Timer.NewTicker(15, refreshOnlineSet)
+    local function refreshOnlineAndMissing()
+        refreshOnlineSet()
+        if checkMissingAddonUsers then
+            checkMissingAddonUsers()
+        end
+    end
+    refreshOnlineAndMissing()
+    C_Timer.NewTicker(15, refreshOnlineAndMissing)
 
     -------------------------------------------------
     -- 2. Restore persisted addon status
@@ -234,7 +241,7 @@ function networking.initialize()
                     ns.db.addonStatus[name].lastSeen = data.lastSeen
                 end
 
-                if ns.ui and ns.ui.refresh then
+                if ns.ui and ns.ui.requestRefresh then
                     ns.ui.requestRefresh()
                 end
                 ns.log.debug(name .. " marked inactive (timeout)")
@@ -306,7 +313,7 @@ function networking.initialize()
     -------------------------------------------------
     -- 7. Detect "online but no addon heartbeat"
     -------------------------------------------------
-    C_Timer.NewTicker(15, function()
+    checkMissingAddonUsers = function()
         if not IsInGuild() then return end
         if not ns.db then return end
 
@@ -320,11 +327,10 @@ function networking.initialize()
             and ns.helpers.getKey(ns.globals.CHARACTERNAME) or nil
         local nowSession = GetTime()
         local nowStamp = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
-        local HEARTBEAT = 30
-        local GRACE = 120
+        local GRACE = 90
         local MISS_STRIKES = 1
 
-        for key, _ in pairs(onlineSet) do
+        for key in pairs(onlineSet) do
             if key ~= me then
                 local s = ns.db.addonStatus[key]
                 if s and s.seen == true then
@@ -409,7 +415,7 @@ function networking.initialize()
                                 end
                             end
                             ns.db.addonStatus[key] = s
-                            if ns.ui and ns.ui.refresh then
+                            if ns.ui and ns.ui.requestRefresh then
                                 ns.ui.requestRefresh()
                             end
                         end
@@ -429,7 +435,7 @@ function networking.initialize()
                 ns.db.addonStatus[key] = s
             end
         end
-    end)
+    end
 end
 
 function networking.ReceivedMessage(msg, distribution, sender)
@@ -599,7 +605,7 @@ function networking.SendAddonStatus(stateOverride)
         money = money
     })
 
-    if ns.ui and ns.ui.refresh then
+    if ns.ui and ns.ui.requestRefresh then
         ns.ui.requestRefresh()
     end
 end

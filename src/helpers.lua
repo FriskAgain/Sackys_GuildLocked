@@ -88,15 +88,16 @@ function helpers.formatMoneyDelta(copper)
 end
 
 function helpers.isGuildMember(target)
-    if not target or not IsInGuild() then return false end
-    local targetShort = Ambiguate(target, "none")
-    for i = 1, GetNumGuildMembers() do
-        local name = GetGuildRosterInfo(i)
-        if name and Ambiguate(name, "none") == targetShort then
-            return true
-        end
+    if not target or target == "" then return false end
+
+    if not helpers._guildCacheBuilt then
+        helpers.rebuildGuildRosterCache()
     end
-    return false
+
+    local key = helpers.getKey(target)
+    if not key then return false end
+
+    return helpers._guildRosterCache[key] == true
 end
 
 function helpers.getGuildMemberData(onlineOnly)
@@ -153,18 +154,16 @@ function helpers.getGuildMemberData(onlineOnly)
 end
 
 function helpers.getGuildMemberRank(name)
-    if not name or not IsInGuild() then return nil end
-    local wantShort = Ambiguate(name, "none") -- strips realm from name if present.
-    for i = 1, GetNumGuildMembers() do
-        local memberName, _, rankIndex = GetGuildRosterInfo(i)
-        if memberName then
-            local memberShort = Ambiguate(memberName, "none")
-            if memberShort == wantShort then
-                return rankIndex
-            end
-        end
+    if not name or name == "" then return nil end
+
+    if not helpers._guildCacheBuilt then
+        helpers.rebuildGuildRosterCache()
     end
-    return nil
+
+    local key = helpers.getKey(name)
+    if not key then return nil end
+
+    return helpers._guildRankCache[key]
 end
 
 function helpers.getGuildRosterOnlineSet()
@@ -180,6 +179,43 @@ function helpers.getGuildRosterOnlineSet()
         end
     end
     return online
+end
+
+helpers._guildRosterCache = helpers._guildRosterCache or {}
+helpers._guildRankCache = helpers._guildRankCache or {}
+helpers._guildCacheBuilt = helpers._guildCacheBuilt or false
+
+function helpers.rebuildGuildRosterCache()
+    wipe(helpers._guildRosterCache)
+    wipe(helpers._guildRankCache)
+
+    if not IsInGuild() then
+        helpers._guildCacheBuilt = true
+        return
+    end
+
+    local count = GetNumGuildMembers()
+    if not count or count <= 0 then
+        helpers._guildCacheBuilt = true
+        return
+    end
+
+    for i = 1, count do
+        local fullName, _, rankIndex = GetGuildRosterInfo(i)
+        if fullName then
+            local key = helpers.getKey(fullName)
+            if key then
+                helpers._guildRosterCache[key] = true
+                helpers._guildRankCache[key] = tonumber(rankIndex)
+            end
+        end
+    end
+
+    helpers._guildCacheBuilt = true
+end
+
+function helpers.invalidateGuildRosterCache()
+    helpers._guildCacheBuilt = false
 end
 
 function helpers.ensureAltLinks()
