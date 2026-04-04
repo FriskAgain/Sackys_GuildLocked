@@ -169,8 +169,7 @@ function receivemail.isAllowed(index)
         return false
     end
 
-    local shortName = true
-    if ns.helpers.isGuildMember(sender, shortName) then
+    if ns.helpers.isGuildMember(sender) then
         return true
     end
     if not hasItem and not (money and money > 0) then
@@ -412,9 +411,8 @@ function receivemail.handle()
             if key then receivemail._blocked[key] = true end
         else
             local isOk = false
-            local shortName = true
 
-            if not isOk and ns.helpers.isGuildMember(sender, shortName) then
+            if not isOk and ns.helpers.isGuildMember(sender) then
                 ns.log.debug(("Mail from %s: Guildmember"):format(sender)); isOk = true
             end
 

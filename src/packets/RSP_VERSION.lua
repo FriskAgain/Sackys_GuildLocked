@@ -48,8 +48,15 @@ function RSP_VERSION.handle(sender, payload)
     local short = (ns.helpers and ns.helpers.getShort and ns.helpers.getShort(sender)) or sender
     local key = (ns.helpers and ns.helpers.getKey and sender and ns.helpers.getKey(sender)) or sender
 
+    if ns.networking and ns.networking.activeUsers then
+        ns.networking.activeUsers[key] = ns.networking.activeUsers[key] or {}
+        ns.networking.activeUsers[key].version = remote ~= "" and remote or nil
+    end
     if ns.ui and ns.ui.dataBuffer then
         ns.ui.updateFieldValue(short, "version", remote ~= "" and remote or "?")
+        if ns.ui.requestRefresh then
+            ns.ui.requestRefresh(0.1)
+        end
     end
 
     if ns.db then

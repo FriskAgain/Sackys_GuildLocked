@@ -8,6 +8,10 @@ function ui.requestRefresh(delay)
 
     C_Timer.After(delay, function()
         ui._refreshQueued = false
+        if ui._refreshPending then
+            ui.requestRefresh(0.3)
+            return
+        end
         if ui.refresh then
             ui.refresh()
         end
@@ -42,10 +46,10 @@ function ui.initialize()
     if ui.frame then return end
 
     ui.frame = ns.components.windowframe
-        :Create(760, 440, "SGLKMainFrame")
-        :Title("Sacky's Guild Locked")
+        :Create(820, 440, "SGLKMainFrame")
+        :Title("Sacky's Guild Locked v" .. tostring((ns.globals and ns.globals.ADDONVERSION) or "?"))
         :Draggable()
-        :Resizable(760, 440)
+        :Resizable(820, 440)
         :EscClose()
 
     ui.frame.background = ui.frame.frame:CreateTexture(nil, "BACKGROUND")
@@ -75,6 +79,7 @@ function ui.initialize()
     end
     ui._officerLogBtn = logBtn
 
+    -- Alt Link Button
     local altBtn = CreateFrame("Button", nil, ui.frame.frame, "UIPanelButtonTemplate")
     altBtn:SetSize(100, 22)
     altBtn:SetPoint("TOPRIGHT", ui.frame.frame, "TOPRIGHT", -180, -30)
@@ -88,6 +93,31 @@ function ui.initialize()
         altBtn:Hide()
     end
     ui._altLinksBtn = altBtn
+
+    -- Sync Button
+    local syncBtn = CreateFrame("Button", nil, ui.frame.frame, "UIPanelButtonTemplate")
+    syncBtn:SetSize(100, 22)
+    syncBtn:SetPoint("TOPRIGHT", ui.frame.frame, "TOPRIGHT", -290, -30)
+    syncBtn:SetText("Sync Now")
+    syncBtn:SetScript("OnClick", function()
+        if GuildRoster then
+            GuildRoster()
+        end
+        if ns.networking and ns.networking.SendToGuild then
+            ns.networking.SendOnlineStatus()
+        end
+        if ns.networking and ns.networking.SendToGuild then
+            ns.networking.SendToGuild("REQ_VERSION", {})
+        end
+        if ns.ui and ns.ui.requestRefresh then
+            C_Timer.After(0.6, function()
+                ns.ui.requestRefresh()
+            end)
+            C_Timer.After(1.5, function()
+                ns.ui.requestRefresh()
+            end)
+        end
+    end)
 
     local memberlist = CreateFrame("Frame", nil, ui.frame.frame)
     memberlist:SetPoint("TOPLEFT", ui.frame.frame, "TOPLEFT", 12, -58)
@@ -139,6 +169,12 @@ function ui.initialize()
             header = "Addon Active",
             field = "addon_active",
             width = 110
+        },
+
+        col8 = {
+            header = "Version",
+            field = "version",
+            width = 70
         }
     }
 
@@ -755,8 +791,6 @@ function ui.updateMemberList(showOnlineOnly)
         local liveLastSeen = live and live.lastSeen or nil
         local liveRecent = (liveLastSeen and ((GetTime() - liveLastSeen) <= 120)) or false
         local liveActive = (live and live.active == true)
-        local savedActive = (saved and saved.active == true)
-        local savedEnabled = (saved and saved.enabled == true)
 
         if not online then
             addonState = "—"
@@ -764,10 +798,8 @@ function ui.updateMemberList(showOnlineOnly)
             addonState = false
         elseif liveRecent and liveActive then
             addonState = true
-        elseif savedActive or savedEnabled then
-            addonState = true
         else
-            addonState = false
+            addonState = "?"
         end
         member.addon_active = addonState
 

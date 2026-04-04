@@ -498,6 +498,17 @@ function helpers.getPlayerProfessionColumns()
     return result
 end
 
+function helpers.profNameEN(spellId)
+    if not spellId then return nil end
+    spellId = tonumber(spellId)
+    for en, id in pairs(PROF_SPELLIDS) do
+        if id == spellId then
+            return en
+        end
+    end
+    return nil
+end
+
 function helpers.professionsReady()
     local n = GetNumSkillLines and GetNumSkillLines() or 0
     if not n or n <= 0 then return false end

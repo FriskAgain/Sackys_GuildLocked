@@ -22,6 +22,7 @@ function trade.handle(name)
     end
     local function check()
         tries = tries + 1
+        if not TradeFrame or not TradeFrame:IsShown() then return end
         refreshRoster()
 
         if ns.helpers and ns.helpers.isGuildMember and ns.helpers.isGuildMember(target) then

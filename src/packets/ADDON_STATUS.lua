@@ -30,7 +30,7 @@ local function maybeLogReenabled(key, s, nowStamp)
         moneyDeltaText = ns.helpers.formatMoneyDelta(moneyDelta)
     end
 
-    local msg = (ns.helpers.getShort(key) or key) .. " re-enabled SGLK after " .. formatDuration(delta)
+    local msg = (ns.helpers.getShort(key) or key) .. " re-enabled SGLK after " .. (ns.formatDuration and ns.formatDuration(delta) or (tostring(delta) .. "s"))
     if moneyDeltaText then
         msg = msg .. " (money change: " .. moneyDeltaText .. ")"
     end
@@ -147,6 +147,7 @@ function ADDON_STATUS.handle(sender, payload)
         s.active = true
         u.active = true
         u.enabled = true
+        s._onlineSince = nil
 
         if wasMissing then
             maybeLogReenabled(key, s, nowStamp)
@@ -154,6 +155,7 @@ function ADDON_STATUS.handle(sender, payload)
 
         s._missing = nil
         s._missingSince = nil
+        s._missStrikes = nil
         s._missingEventId = nil
         s.missingMoneyBaseline = nil
         s.missingMoneyAt = nil
@@ -185,7 +187,7 @@ function ADDON_STATUS.handle(sender, payload)
     ns.db.addonStatus[key] = s
     ns.networking.activeUsers[key] = u
 
-    if ns.ui and ns.ui.refresh then
-        ns.ui.refresh()
+    if ns.ui and ns.ui.requestRefresh then
+        ns.ui.requestRefresh(0.3)
     end
 end

@@ -304,6 +304,9 @@ function tablev2:_updateCell(fs, value, field, item)
         elseif field.field == "addon_active" and text == "—" then
             fs:SetText(text)
             fs:SetTextColor(0.6, 0.6, 0.6)
+        elseif field.field == "addon_active" and text == "?" then
+            fs:SetText(text)
+            fs:SetTextColor(0.8, 0.8, 0.2)
         else
             fs:SetText(text)
             fs:SetTextColor(1, 1, 1)
@@ -551,15 +554,20 @@ function tablev2:refresh(forceRows)
 
     local oldWidth = self.totalColumnWidth or 0
     local oldCount = self._lastRowCount    or 0
-    self:calculateFieldWidths()
+    local newRevision = tonumber(self.dataRevision) or 0
+    local containerSame = math.abs(containerWidth - (self._lastContainerWidth or 0)) < 4
+    local revisionSame = (newRevision == (self._lastDataRevision or 0))
+    if not containerSame or not revisionSame then
+        self:calculateFieldWidths()
+        self._lastContainerWidth = containerWidth
+    end
     self:applySort()
     local newWidth = self.totalColumnWidth or 0
     local newCount = #(self.data or {})
-    local newRevision = tonumber(self.dataRevision) or 0
-
     local widthChanged    = (oldWidth ~= newWidth)
     local rowCountChanged = (oldCount ~= newCount)
-    local needsRows = forceRows or widthChanged or rowCountChanged or not self.rows or #self.rows == 0
+    local revisionChanged = (newRevision ~= (self._lastDataRevision or 0))
+    local needsRows = forceRows or widthChanged or rowCountChanged or revisionChanged or not self.rows or #self.rows == 0
 
     if not self.header or widthChanged then
         self:updateHeader()

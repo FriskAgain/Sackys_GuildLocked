@@ -29,8 +29,13 @@ function log.error(msg)
 end
 
 function log.debug(msg)
-    if (ns.options.debug or false) then
+    if (ns.options and ns.options.debug or false) then
         local frame = getOrCreateSGLKChatFrame()
         frame:AddMessage("|cff3399ff" .. LOG_PREFIX .. "|r" .. "|cffffff00[DEBUG]|r " .. "|cffffffff" .. tostring(msg) .. "|r")
     end
+end
+
+function log.warn(msg)
+    local frame = getOrCreateSGLKChatFrame()
+    frame:AddMessage("|cff3399ff" .. LOG_PREFIX .. "|r" .. "|cffFF9900[WARN]|r " .. "|cffffffff" .. tostring(msg) .. "|r")
 end

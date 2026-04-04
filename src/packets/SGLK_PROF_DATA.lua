@@ -82,5 +82,5 @@ function SGLK_PROF_DATA.handle(sender, payload)
         u.prof2Skill = payload.prof2Skill or u.prof2Skill
     end
 
-    if ns.ui and ns.ui.refresh then ns.ui.refresh() end
+    if ns.ui and ns.ui.requestRefresh then ns.ui.requestRefresh() end
 end

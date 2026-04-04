@@ -84,8 +84,7 @@ function sendmail.validateRecipient()
         SendMailNameEditBox:SetTextColor(1, 1, 1)
         return
     end
-    local shortName = true
-    local isGuildMember = ns.helpers.isGuildMember(target, shortName) or ns.helpers.isGuildMember(target, not shortName)
+    local isGuildMember = ns.helpers.isGuildMember(target)
 
     local meKey = ns.helpers and ns.helpers.getPlayerKey and ns.helpers.getPlayerKey()
     local targetKey = ns.helpers and ns.helpers.getKey and ns.helpers.getKey(target) or target

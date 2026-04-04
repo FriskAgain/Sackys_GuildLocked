@@ -16,6 +16,7 @@ frame:RegisterEvent("TRADE_REQUEST")
 frame:RegisterEvent("MAIL_SHOW")
 frame:RegisterEvent("MAIL_INBOX_UPDATE")
 frame:RegisterEvent("MAIL_SEND_INFO_UPDATE")
+frame:RegisterEvent("PLAYER_GUILD_UPDATE")
 frame:RegisterEvent("GUILD_ROSTER_UPDATE")
 frame:RegisterEvent("PLAYER_DEAD")
 frame:RegisterEvent("SKILL_LINES_CHANGED")
@@ -36,24 +37,16 @@ local function RequestGuildRoster()
     end
 end
 
-local uiRefreshPending = false
-
 local function SafeUIRefresh()
     if ns.ui and ns.ui.requestRefresh then
         ns.ui.requestRefresh(0.3)
     end
 end
 
-local guildRosterRefreshPending = false
 local function QueueGuildUIRefresh()
-    if guildRosterRefreshPending then return end
-    guildRosterRefreshPending = true
-    C_Timer.After(0.5, function()
-        guildRosterRefreshPending = false
-        if ns.ui and ns.ui.refresh then
-            ns.ui.refresh()
-        end
-    end)
+    if ns.ui and ns.ui.requestRefresh then
+        ns.ui.requestRefresh(0.5)
+    end
 end
 
 local function DelayedProfScan()
@@ -63,6 +56,7 @@ local function DelayedProfScan()
 end
 
 local function ProfScanBurst()
+    if ns.profReady then return end
     C_Timer.After(1.0, DelayedProfScan)
     C_Timer.After(3.0, DelayedProfScan)
     C_Timer.After(6.0, DelayedProfScan)
@@ -199,7 +193,7 @@ local function TryGuildInit()
 
     ProfScanBurst()
     C_Timer.After(0.5, function()
-        if ns.networking and ns.networking.SendOnleStatus then
+        if ns.networking and ns.networking.SendOnlineStatus then
             ns.networking.SendOnlineStatus()
         end
     end)
@@ -212,18 +206,6 @@ local function TryGuildInit()
     C_Timer.After(2.5, function()
         if ns.sync and ns.sync.altlinks and ns.sync.altlinks.requestFull then
             ns.sync.altlinks.requestFull(true)
-        end
-    end)
-    C_Timer.After(3.0, function()
-        if ns.helpers and ns.helpers.playerCanViewGuildLog and ns.helpers.playerCanViewGuildLog() then
-            if ns.networking and ns.networking.SendToGuild then
-                local requestId = ns.helpers and ns.helpers.makeRequestId and ns.helpers.makeRequestId("GLOG") or (tostring(time()) .. "-" .. tostring(math.random(1000, 9999)))
-
-                ns.networking.SendToGuild("REQ_GUILD_LOG", { 
-                    limit = 30,
-                    requestId = requestId,
-                })
-            end
         end
     end)
     C_Timer.After(3.5, function()
@@ -357,6 +339,11 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
 
             if (now - lastReply) >= INVITE_REPLY_COOLDOWN then
                 inviteReplyCooldown[cooldownKey] = now
+                for k, t in pairs(inviteReplyCooldown) do
+                    if (now - t) > INVITE_REPLY_COOLDOWN then
+                        inviteReplyCooldown[k] = nil
+                    end
+                end
                 if SendChatMessage then
                     SendChatMessage(
                         "This character is part of <Earned Not Bought>'s GuildFound/CraftedLocked challenge, so I only group with guildmates. We're recruiting! Fresh character required, join before leveling, in-house addon used. Whisper if interested!",
@@ -451,14 +438,16 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2)
         return
 
     elseif event == "PLAYER_DEAD" then
+        if not ns.globals or not ns.globals.CHARACTERNAME then return end
+        if not ns.sync or not ns.sync.mailexception then return end
         local tx = {
             u = ns.helpers.getKey(ns.globals.CHARACTERNAME),
             t = time(),
             d = 0
         }
+        if not tx.u then return end
         ns.sync.mailexception._RecordTransaction(tx)
         ns.networking.SendToGuild("BROADCAST_MAIL_EXCEPTIONS", tx)
         return
     end
-
 end)

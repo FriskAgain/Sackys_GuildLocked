@@ -54,6 +54,19 @@ function base.randomSelectUsers()
     for _, userKey in ipairs(base.selectedUsers) do
         ns.networking.SendWhisper("REQ_MAIL_EXCEPTIONS", {}, whisperTarget(userKey))
     end
+    
+    C_Timer.After(1.0, function()
+        if ns.helpers and ns.helpers.playerCanViewGuildLog and ns.helpers.playerCanViewGuildLog() then
+            local target = base.selectedUsers[1]
+            if target and ns.networking and ns.networking.SendWhisper then
+                local requestId = ns.helpers.makeRequestId("GLOG")
+                ns.networking.SendWhisper("REQ_GUILD_LOG", {
+                    limit = 30,
+                    requestId = requestId,
+                }, target)
+            end
+        end
+    end)
 end
 
 function base:registerActiveUser(name)
