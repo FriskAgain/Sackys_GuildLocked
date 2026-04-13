@@ -132,10 +132,10 @@ function helpers.getGuildMemberData(onlineOnly)
                     name = helpers.getShort(key) or name or key,
                     online = online and "Yes" or "No",
 
-                    prof1 = (charData and charData.prof1) or "-",
-                    prof1Skill = (charData and charData.prof1Skill) or "-",
-                    prof2 = (charData and charData.prof2) or "-",
-                    prof2Skill = (charData and charData.prof2Skill) or "-",
+                    prof1 = (charData and charData.prof1 and charData.prof1 ~= "-" and charData.prof1) or (statusData and statusData.prof1 and statusData.prof1 ~= "-" and statusData.prof1) or "-",
+                    prof1Skill = (charData and charData.prof1Skill and charData.prof1Skill ~= "-" and charData.prof1Skill) or (statusData and statusData.prof1Skill and statusData.prof1Skill ~= "-" and statusData.prof1Skill) or "-",
+                    prof2 = (charData and charData.prof2 and charData.prof2 ~= "-" and charData.prof2) or (statusData and statusData.prof2 and statusData.prof2 ~= "-" and statusData.prof2) or "-",
+                    prof2Skill = (charData and charData.prof2Skill and charData.prof2Skill ~= "-" and charData.prof2Skill) or (statusData and statusData.prof2Skill and statusData.prof2Skill ~= "-" and statusData.prof2Skill) or "-",
 
                     money = money,
                     moneyText = (helpers.formatMoney and helpers.formatMoney(money)) or "0g 0s 0c",

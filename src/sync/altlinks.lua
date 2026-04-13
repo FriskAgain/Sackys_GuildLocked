@@ -178,7 +178,15 @@ function altlinks.applyFull(payload, sender)
         markAnswered(requestId)
     end
 
-    ns.db.altLinks = normalizeAltLinks(payload.links)
+    local incoming = normalizeAltLinks(payload.links)
+    local incomingUpdatedAt = tonumber(payload.updatedAt) or 0
+    local localUpdatedAt = tonumber(ns.db.altLinksUpdatedAt) or 0
+
+    if incomingUpdatedAt >= localUpdatedAt then
+        ns.db.altLinks = incoming
+        ns.db.altLinksUpdatedAt = incomingUpdatedAt
+    end
+
 
     if ns.ui and ns.ui.altLinksFrame and ns.ui.altLinksFrame.frame and ns.ui.altLinksFrame.frame:IsShown() then
         if ns.ui.updateAltLinksUI then

@@ -560,6 +560,7 @@ function ui.ensureAltLinksUI()
 
         local ok, err = ns.helpers.createAltGroup(mainText)
         if ok then
+            ns.db.altLinksUpdatedAt = (ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
             if ns.log and ns.log.info then
                 ns.log.debug("Created alt group for " .. tostring(mainText))
             end
@@ -588,6 +589,7 @@ function ui.ensureAltLinksUI()
 
         local ok, err = ns.helpers.addAltLink(mainText, altText)
         if ok then
+            ns.db.altLinksUpdatedAt = (ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
             if ns.log and ns.log.info then
                 ns.log.debug("Linked alt " .. tostring(altText) .. " to main " .. tostring(mainText))
             end
@@ -618,6 +620,7 @@ function ui.ensureAltLinksUI()
 
         local ok, err = ns.helpers.removeCharacterFromAltLinks(targetText)
         if ok then
+            ns.db.altLinksUpdatedAt = (ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
             if ns.log and ns.log.info then
                 ns.log.debug("Removed " .. tostring(targetText) .. " from alt links.")
             end
