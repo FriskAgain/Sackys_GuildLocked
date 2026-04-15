@@ -203,6 +203,55 @@ function altlinks.applyFull(payload, sender)
     return true
 end
 
+local function getDesignatedAltLinksResponder()
+    if not IsInGuild() then return nil end
+    if not ns.helpers or not ns.helpers.normalizeCharacterKey or not ns.helpers.canCharacterManageOfficerTools then
+        return nil
+    end
+
+    local bestKey = nil
+    local bestRank = nil
+    local count = GetNumGuildMembers() or 0
+
+    for i = 1, count do
+        local fullName, _, rankIndex, _, _, _, _, _, online = GetGuildRosterInfo(i)
+        if fullName and online then
+            local key = ns.helpers.normalizeCharacterKey(fullName) or fullName
+            if key and ns.helpers.canCharacterManageOfficerTools(key) then
+                rankIndex = tonumber(rankIndex) or 999
+
+                if not bestKey
+                    or rankIndex < bestRank
+                    or (rankIndex == bestRank and tostring(key) < tostring(bestKey)) then
+                    bestKey = key
+                    bestRank = rankIndex
+                end
+            end
+        end
+    end
+
+    return bestKey
+end
+
+local function isLocalDesignatedResponder()
+    if not ns.helpers or not ns.helpers.getPlayerKey or not ns.helpers.normalizeCharacterKey then
+        return false, nil
+    end
+
+    local me = ns.helpers.getPlayerKey()
+    me = ns.helpers.normalizeCharacterKey(me) or me
+    if not me or me == "" then
+        return false, nil
+    end
+
+    local designated = getDesignatedAltLinksResponder()
+    if not designated or designated == "" then
+        return false, nil
+    end
+
+    return designated == me, designated
+end
+
 function altlinks.handleRequest(sender, payload)
     if not sender or sender == "" then
         return false, "Invalid sender."
@@ -214,24 +263,33 @@ function altlinks.handleRequest(sender, payload)
         return false, "Requester is not a guild member."
     end
 
+    local shouldAnswer, designated = isLocalDesignatedResponder()
+
+    if not shouldAnswer then
+        if ns.log and ns.log.debug then
+            ns.log.debug("Skipping ALT_LINKS_FULL response. Designated responder is: " .. tostring(designated or "?"))
+        end
+        return false, "Another officer is designated responder: " .. tostring(designated or "?")
+    end
+
+    if ns.log and ns.log.debug then
+        ns.log.debug("This client is designated alt links responder.")
+    end
+
     local requestId = tostring(payload and payload.requestId or "")
     if requestId == "" then
         requestId = tostring(sender) .. ":" .. tostring(time())
     end
 
-    local delay = 0.20 + (math.random() * 0.80)
+    local delay = 0.15
 
     C_Timer.After(delay, function()
-        local now = time()
-        pruneAnswered(now)
-
-        if altlinks._answered[requestId] then
-            return
-        end
-
         local ok = altlinks.sendFullTo(sender, requestId, true)
         if ok then
             markAnswered(requestId)
+            if ns.log and ns.log.debug then
+                ns.log.debug("Sent ALT_LINKS_FULL to " .. tostring(sender))
+            end
         end
     end)
 

@@ -562,7 +562,7 @@ function ui.ensureAltLinksUI()
         if ok then
             ns.db.altLinksUpdatedAt = (ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
             if ns.log and ns.log.info then
-                ns.log.debug("Created alt group for " .. tostring(mainText))
+                ns.log.info("Alt group created for " .. tostring(mainText) .. ".")
             end
             if ns.sync and ns.sync.altlinks and ns.sync.altlinks.broadcastFull then
                 ns.sync.altlinks.broadcastFull(true)
@@ -591,7 +591,7 @@ function ui.ensureAltLinksUI()
         if ok then
             ns.db.altLinksUpdatedAt = (ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
             if ns.log and ns.log.info then
-                ns.log.debug("Linked alt " .. tostring(altText) .. " to main " .. tostring(mainText))
+                ns.log.info(tostring(altText) .. " linked to " .. tostring(mainText) .. ".")
             end
             if ns.sync and ns.sync.altlinks and ns.sync.altlinks.broadcastFull then
                 ns.sync.altlinks.broadcastFull(true)
@@ -622,7 +622,7 @@ function ui.ensureAltLinksUI()
         if ok then
             ns.db.altLinksUpdatedAt = (ns.helpers.nowStamp and ns.helpers.nowStamp()) or time()
             if ns.log and ns.log.info then
-                ns.log.debug("Removed " .. tostring(targetText) .. " from alt links.")
+                ns.log.info(tostring(targetText) .. " removed from alt links.")
             end
             if ns.sync and ns.sync.altlinks and ns.sync.altlinks.broadcastFull then
                 ns.sync.altlinks.broadcastFull(true)

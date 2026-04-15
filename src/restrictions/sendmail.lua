@@ -87,7 +87,8 @@ function sendmail.validateRecipient()
     local isGuildMember = ns.helpers.isGuildMember(target)
 
     local meKey = ns.helpers and ns.helpers.getPlayerKey and ns.helpers.getPlayerKey()
-    local targetKey = ns.helpers and ns.helpers.getKey and ns.helpers.getKey(target) or target
+    local targetShort = Ambiguate(target, "none")
+    local targetKey = ns.helpers and ns.helpers.getKey and ns.helpers.getKey(targetShort) or target
     local isOwnAlt = false
 
     if ns.helpers and ns.helpers.isOwnAltPair and meKey and targetKey then
