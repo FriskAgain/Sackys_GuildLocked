@@ -107,7 +107,7 @@ function altlinks.broadcastFull(force)
 
     ns.networking.SendToGuild(PACKET_FULL, {
         links = deepCopyAltLinks(ns.db.altLinks),
-        updatedAt = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time(),
+        updatedAt = tonumber(ns.db.altLinksUpdatedAt) or (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time(),
         updatedBy = (ns.globals and ns.globals.CHARACTERNAME) or UnitName("player") or "?",
     })
 
@@ -136,7 +136,7 @@ function altlinks.sendFullTo(target, requestId, force)
     ns.networking.SendWhisper(PACKET_FULL, {
         requestId = requestId,
         links = deepCopyAltLinks(ns.db.altLinks),
-        updatedAt = (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time(),
+        updatedAt = tonumber(ns.db.altLinksUpdatedAt) or (ns.helpers and ns.helpers.nowStamp and ns.helpers.nowStamp()) or time(),
         updatedBy = (ns.globals and ns.globals.CHARACTERNAME) or UnitName("player") or "?",
     }, target)
 
