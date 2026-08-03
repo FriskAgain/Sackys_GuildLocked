@@ -107,6 +107,7 @@ function receivemail.isMailFromNPC(index, sender)
     if not sender then return false end
     local _, _, _, _, _, _, _, _, _, _, _, canReply, isGM = GetInboxHeaderInfo(index)
     if isGM then return true end
+    if not canReply then return true end
     return sender:find(" ", 1, true) ~= nil
 end
 
@@ -134,13 +135,15 @@ function receivemail.logBlockedAltMail(senderKey)
     receivemail._altLogThrottle = receivemail._altLogThrottle or {}
 
     local now = time()
-    local id = "mail-alt-recv:" .. tostring(meKey) .. ":" .. tostring(senderKey)
-    local last = receivemail._altLogThrottle[id] or 0
+    local pairId = "mail-alt-recv:" .. tostring(meKey) .. ":" .. tostring(senderKey)
+    local last = receivemail._altLogThrottle[pairId] or 0
 
     if (now - last) < 5 then
         return
     end
-    receivemail._altLogThrottle[id] = now
+    receivemail._altLogThrottle[pairId] = now
+
+    local id = pairId .. ":" .. tostring(now)
 
     local meShort = (ns.helpers and ns.helpers.getShort and ns.helpers.getShort(meKey)) or meKey
     local senderShort = (ns.helpers and ns.helpers.getShort and ns.helpers.getShort(senderKey)) or senderKey
@@ -191,6 +194,11 @@ function receivemail.attemptReturn(index)
         if key then receivemail._blocked[key] = true end
         return
     end
+
+    if receivemail.isMailFromNPC(index, sender) then
+        return
+    end
+
     local key = receivemail.buildMailKey(index)
     if not key or receivemail._blocked[key] or receivemail._pending[key] then return end
     receivemail._pending[key] = { attempts = 1 }

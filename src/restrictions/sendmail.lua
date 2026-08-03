@@ -54,12 +54,14 @@ function sendmail.logBlockedAltMail(meKey, targetKey)
     if not meKey or not targetKey then return end
 
     local now = time()
-    local id = "mail-alt-send:" .. tostring(meKey) .. ":" .. tostring(targetKey)
-    local last = sendmail._lastBlockedLog[id] or 0
+    local pairId = "mail-alt-send:" .. tostring(meKey) .. ":" .. tostring(targetKey)
+    local last = sendmail._lastBlockedLog[pairId] or 0
     if (now - last) < 5 then
         return
     end
-    sendmail._lastBlockedLog[id] = now
+    sendmail._lastBlockedLog[pairId] = now
+
+    local id = pairId .. ":" .. tostring(now)
 
     local meShort = (ns.helpers and ns.helpers.getShort and ns.helpers.getShort(meKey)) or meKey
     local targetShort = (ns.helpers and ns.helpers.getShort and ns.helpers.getShort(targetKey)) or targetKey

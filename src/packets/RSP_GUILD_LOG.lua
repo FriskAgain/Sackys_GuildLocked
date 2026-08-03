@@ -27,6 +27,15 @@ end
 
 function RSP_GUILD_LOG.handle(sender, payload)
     if not payload or type(payload.entries) ~= "table" then return end
+    if not sender or sender == "" then return end
+
+    if not (ns.helpers and ns.helpers.canCharacterManageOfficerTools
+        and ns.helpers.canCharacterManageOfficerTools(sender)) then
+        if ns.log and ns.log.debug then
+            ns.log.debug("Rejected RSP_GUILD_LOG from non-officer: " .. tostring(sender))
+        end
+        return
+    end
 
     local requestId = tostring(payload.requestId or "")
     local part = tonumber(payload.part) or 1
